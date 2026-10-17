@@ -6,6 +6,7 @@
   "main": "src/index.ts",
   "scripts": {
     "typecheck": "tsc -p .",
-    "test": "vitest run --passWithNoTests --reporter=dot --silent"
+    "test": "vitest run --passWithNoTests --reporter=dot --silent",
+    "lint": "eslint src"
   }
 }

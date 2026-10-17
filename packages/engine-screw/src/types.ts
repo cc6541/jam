@@ -1,5 +1,6 @@
 // Contrats du moteur Screw Jam. Voir docs/GAME-SPEC.md.
 // Règles : TS pur, aucune dépendance runtime, état normalisé, données dérivées via sélecteurs.
+// Gelé après la phase 1 : toute modification passe par une note dans docs/decisions/.
 
 export type Id = string;
 
@@ -14,10 +15,7 @@ export interface Point {
 
 // ---------- Définition statique d'un niveau (JSON, validé par level-tools) ----------
 
-export type ScrewKind =
-  | { type: 'standard' }
-  | { type: 'multiTap'; taps: number }
-  | { type: 'joker' }; // compatible avec toutes les couleurs [À VALIDER]
+export type ScrewKind = { type: 'standard' } | { type: 'multiTap'; taps: number };
 
 export interface PlateDef {
   id: Id;
@@ -51,7 +49,7 @@ export interface LevelRules {
   activeBoxes: number; // 2
   toolboxSlots: number; // 5
   toolboxMaxSlots: number; // 7
-  nearMiss: { maxRemaining: number; offerSeconds: number };
+  nearMiss: { maxRemaining: number; offerSeconds: number }; // 3, 10
 }
 
 // ---------- État de partie (normalisé) ----------
@@ -72,9 +70,10 @@ export interface GameState {
   level: LevelDef;
   screws: Record<Id, ScrewState>; // vis encore sur le plateau
   plates: Record<Id, PlateDef>; // plaques encore présentes
-  openBoxes: BoxState[];
-  nextBoxIndex: number;
+  openBoxes: BoxState[]; // une boîte partie est remplacée à la même place
+  nextBoxIndex: number; // prochaine boîte de level.boxQueue à ouvrir
   toolbox: Id[]; // FIFO
+  holding: Id[]; // réserve remplie par clearToolbox, FIFO, sans limite
   toolboxSlots: number;
   status: GameStatus;
   rngState: number;
@@ -91,9 +90,11 @@ export type Action =
 /** Événements émis pour le rendu, les sons, l'haptique et l'analytics (le moteur ne fait aucun effet de bord). */
 export type GameEvent =
   | { type: 'screwTapped'; screwId: Id; tapsLeft: number }
-  | { type: 'screwToBox'; screwId: Id; boxColor: ColorId }
+  | { type: 'screwToBox'; screwId: Id; boxColor: ColorId; from: 'board' | 'toolbox' | 'holding' }
   | { type: 'screwToToolbox'; screwId: Id }
   | { type: 'plateFell'; plateId: Id }
+  | { type: 'toolboxCleared'; screwIds: Id[] }
+  | { type: 'toolboxSlotAdded'; slots: number }
   | { type: 'boxCompleted'; color: ColorId }
   | { type: 'rejected'; reason: 'blocked' | 'unknown' | 'notPlaying' | 'limit' }
   | { type: 'won' }
