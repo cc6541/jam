@@ -25,6 +25,9 @@ La prochaine tâche est injectée au démarrage de session ; ne relis pas `docs/
   `docs/AGENTS.md` (rôles), `docs/ZERO-INFRA.md` (services).
 - Commandes : préférer `pnpm check` aux commandes verbeuses ; filtrer avec `| tail -n 40` si besoin.
 - Réponses courtes : pas de résumé de ce qui vient d'être fait si le diff le montre.
+- Plugin `founder-skill` : toujours lancer ses skills avec `--quick`. Ne proposer une passe complète
+  (100 sous-agents) que si elle apporte un vrai gain (ex. décision de prix ou de lancement) :
+  dire pourquoi, et attendre l'accord de l'humain.
 
 ## Conventions
 TypeScript strict, pas de `any`. Tests Vitest à côté du code (`*.test.ts`).
