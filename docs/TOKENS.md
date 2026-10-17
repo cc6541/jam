@@ -23,6 +23,10 @@
 Par ordre de priorité ; les gains annoncés viennent des auteurs et varient selon l'usage.
 1. **rtk** (Rust Token Killer) et son plugin Claude Code : un hook réécrit les commandes Bash pour compresser
    leur sortie (tests, git, ls…). Ne couvre pas les outils Read/Grep/Glob natifs.
+   **Retenu.** Installation dans le setup script de l'environnement cloud (et sur votre machine) :
+   `curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | RTK_VERSION=v1.0.1 sh`
+   puis `~/.local/bin/rtk init -g --auto-patch`. Version épinglée car le proxy cloud bloque la détection de la dernière.
+   `.claude/settings.json` définit `RTK_SUPPRESS_HOOK_WARNING` et `RTK_TELEMETRY_DISABLED`. Bilan : `rtk gain`.
 2. **headroom** (`headroomlabs-ai/headroom`) : compression du contexte entre Claude Code et l'API
    (`headroom wrap claude` ou proxy local), réversible via `headroom_retrieve`. Fait en partie doublon avec rtk :
    commencer par rtk, ajouter headroom si les gros contextes restent un problème.

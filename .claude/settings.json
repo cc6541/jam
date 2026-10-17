@@ -1,6 +1,10 @@
 {
   "model": "sonnet",
   "effortLevel": "medium",
+  "env": {
+    "RTK_SUPPRESS_HOOK_WARNING": "1",
+    "RTK_TELEMETRY_DISABLED": "1"
+  },
   "permissions": {
     "allow": [
       "Bash(pnpm install)",
