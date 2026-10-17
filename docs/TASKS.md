@@ -21,17 +21,20 @@ Agent conseillé entre crochets (voir `docs/AGENTS.md`).
 - [x] Tests Vitest de `engine-screw` couvrant chaque règle de `GAME-SPEC.md` (refus si bloquée, multi-tap, cascade boîtes et toolbox, défaite toolbox pleine, victoire, near miss, undo par replay, déterminisme).
   **DoD :** les tests compilent et échouent (moteur non implémenté) ; chaque règle de la spec est référencée par au moins un test.
   Preuve : typecheck + lint OK ; `engine.test.ts` 45 échecs (stub), `spec-coverage.test.ts` 14/14 ([R1]–[R13]).
-  `pnpm check` reste rouge jusqu'à la phase 3.
 
 ## Phase 3 — Moteur, solveur, générateur [engine]
-- [ ] Réducteur `step` + sélecteurs.
+- [x] Réducteur `step` + sélecteurs.
   **DoD :** tous les tests de la phase 2 passent ; couverture ≥ 90 % sur `engine-screw`.
-- [ ] Solveur (BFS/A* avec mémoïsation d'état) + score de difficulté (profondeur, branches perdantes, taux d'échec d'un joueur aléatoire).
+  Preuve : `pnpm check` OK, 66 tests ; couverture lignes 100 %, branches 90,4 % (seuil 90 % imposé par `vitest.config.ts`).
+- [x] Solveur (BFS/A* avec mémoïsation d'état) + score de difficulté (profondeur, branches perdantes, taux d'échec d'un joueur aléatoire).
   **DoD :** `pnpm levels:validate` résout 50 niveaux en moins de 60 s en CI Linux.
-- [ ] `pnpm levels:stats` : une ligne par pack (nombre de niveaux, difficulté min/moy/max, niveaux invalides).
+  Preuve : 100 niveaux validés (schéma + solveur + courbe) en 6,9 s ; DFS mémoïsée, voir `docs/decisions/0003`.
+- [x] `pnpm levels:stats` : une ligne par pack (nombre de niveaux, difficulté min/moy/max, niveaux invalides).
   **DoD :** sortie de moins de 20 lignes pour 100 niveaux.
-- [ ] Générateur procédural seedé + courbe de difficulté en dents de scie.
+  Preuve : `screw-jam: 100 niveaux, difficulté min 0 / moy 33.4 / max 99, 0 invalides` (1 ligne).
+- [x] Générateur procédural seedé + courbe de difficulté en dents de scie.
   **DoD :** génère les niveaux 1 à 100 de `apps/screw-jam/levels/`, tous validés, difficulté non décroissante par blocs de 10.
+  Preuve : `pnpm levels:generate screw-jam 10 1` (2 min 30) ; moyennes par bloc 0 / 0 / 6 / 9,9 / 28 / 39 / 49,8 / 61,7 / 66,2 / 73,3.
 
 ## Phase 4 — Plateau jouable [render]
 - [ ] `render-pixi` : plateau, animations (vis qui sort, plaque qui tombe), haptique branchée sur les `GameEvent`.

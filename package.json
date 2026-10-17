@@ -9,7 +9,8 @@
     "typecheck": "turbo run typecheck --output-logs=errors-only",
     "lint": "turbo run lint --output-logs=errors-only",
     "levels:validate": "pnpm -s --filter @jam/level-tools validate",
-    "levels:stats": "pnpm -s --filter @jam/level-tools stats"
+    "levels:stats": "pnpm -s --filter @jam/level-tools stats",
+    "levels:generate": "pnpm -s --filter @jam/level-tools generate"
   },
   "devDependencies": {
     "@eslint/js": "^9.12.0",
