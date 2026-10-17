@@ -15,4 +15,7 @@ Dépendances autorisées : `apps → ui, render-pixi, shell, cross-promo, engine
 `render-pixi → engine-*` ; `level-tools → engine-*` (solveur). `shell`, `cross-promo` et `engine-*`
 ne dépendent d'aucun autre package interne.
 
+Ports du shell (`packages/shell/src/ports.ts`) : Storage, Clock, Ads, Iap, Analytics, RemoteConfig,
+Feedback (haptique + sons, `docs/JUICE.md`), Notifications (locales). Mocks dans `mocks.ts`.
+
 Rendu : PixiJS pour le plateau, React pour l'UI, Capacitor pour iOS/Android.

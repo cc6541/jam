@@ -3,7 +3,8 @@
 
 export type Id = string;
 
-export type ColorId = 'red' | 'blue' | 'yellow' | 'green' | 'purple' | 'orange';
+export const COLORS = ['red', 'blue', 'yellow', 'green', 'purple', 'orange'] as const;
+export type ColorId = (typeof COLORS)[number];
 /** Motif associé à chaque couleur pour l'accessibilité (le thème fournit le rendu). */
 export type PatternId = 'dots' | 'stripes' | 'cross' | 'wave' | 'grid' | 'plain';
 
@@ -17,7 +18,7 @@ export interface Point {
 export type ScrewKind =
   | { type: 'standard' }
   | { type: 'multiTap'; taps: number }
-  | { type: 'joker' }; // compatible avec toutes les couleurs [À VALIDER]
+  | { type: 'joker' }; // va dans n'importe quelle boîte
 
 export interface PlateDef {
   id: Id;
@@ -27,6 +28,7 @@ export interface PlateDef {
 
 export interface ScrewDef {
   id: Id;
+  /** Couleur affichée ; ignorée pour le rangement si `kind` est `joker`. */
   color: ColorId;
   kind: ScrewKind;
   at: Point;
@@ -34,10 +36,13 @@ export interface ScrewDef {
   pins: Id[];
 }
 
+export type Difficulty = 'normal' | 'hard' | 'superHard';
+
 export interface LevelDef {
   schemaVersion: 1;
   id: Id;
   seed: number;
+  difficulty: Difficulty;
   board: { width: number; height: number };
   plates: PlateDef[];
   screws: ScrewDef[];
@@ -51,7 +56,7 @@ export interface LevelRules {
   activeBoxes: number; // 2
   toolboxSlots: number; // 5
   toolboxMaxSlots: number; // 7
-  nearMiss: { maxRemaining: number; offerSeconds: number };
+  nearMiss: { maxRemaining: number }; // 3
 }
 
 // ---------- État de partie (normalisé) ----------
@@ -76,26 +81,42 @@ export interface GameState {
   nextBoxIndex: number;
   toolbox: Id[]; // FIFO
   toolboxSlots: number;
+  /** Vis sortie sans place au moment de la défaite ; replacée par `revive`. */
+  overflow: Id | null;
   status: GameStatus;
   rngState: number;
   moves: number;
+  revives: number;
+  /** Actions jouées depuis `init` (hors `undo`), pour l'annulation par replay. */
+  history: Action[];
 }
 
 // ---------- Actions & API ----------
 
 export type Action =
   | { type: 'tap'; screwId: Id }
-  | { type: 'addToolboxSlot' }
-  | { type: 'clearToolbox' };
+  | { type: 'drill'; screwId: Id }
+  | { type: 'extraSlot' }
+  | { type: 'undo' }
+  | { type: 'revive' };
 
-/** Événements émis pour le rendu, les sons, l'haptique et l'analytics (le moteur ne fait aucun effet de bord). */
+export type RejectReason = 'blocked' | 'unknown' | 'notPlaying' | 'limit' | 'nothingToUndo';
+
+/** Événements pour le rendu, le son, l'haptique et l'analytics (le moteur ne fait aucun effet de bord). */
 export type GameEvent =
   | { type: 'screwTapped'; screwId: Id; tapsLeft: number }
-  | { type: 'screwToBox'; screwId: Id; boxColor: ColorId }
-  | { type: 'screwToToolbox'; screwId: Id }
+  | { type: 'screwToBox'; screwId: Id; boxColor: ColorId; filled: number }
+  | { type: 'screwToToolbox'; screwId: Id; slot: number }
+  | { type: 'toolboxToBox'; screwId: Id; boxColor: ColorId; filled: number }
   | { type: 'plateFell'; plateId: Id }
   | { type: 'boxCompleted'; color: ColorId }
-  | { type: 'rejected'; reason: 'blocked' | 'unknown' | 'notPlaying' | 'limit' }
+  | { type: 'boxOpened'; color: ColorId }
+  | { type: 'cascade'; depth: number }
+  | { type: 'toolboxDanger'; free: number }
+  | { type: 'slotAdded'; slots: number }
+  | { type: 'undone' }
+  | { type: 'revived' }
+  | { type: 'rejected'; reason: RejectReason }
   | { type: 'won' }
   | { type: 'lost'; nearMiss: boolean };
 
@@ -107,7 +128,7 @@ export interface StepResult {
 export interface Engine {
   init(level: LevelDef): GameState;
   step(state: GameState, action: Action): StepResult;
-  /** Undo = rejouer l'historique moins le dernier coup (déterministe). */
+  /** Rejoue une suite d'actions depuis `init` (déterministe). */
   replay(level: LevelDef, actions: Action[]): GameState;
 }
 
@@ -115,4 +136,6 @@ export interface Selectors {
   isScrewBlocked(state: GameState, screwId: Id): boolean;
   tappableScrews(state: GameState): Id[];
   isNearMiss(state: GameState): boolean;
+  /** Avancement du niveau entre 0 et 1 (jauge « Si près ! »). */
+  progress(state: GameState): number;
 }
