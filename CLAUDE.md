@@ -21,8 +21,9 @@ La prochaine tâche est injectée au démarrage de session ; ne relis pas `docs/
 ## Économie de tokens
 - Lire ciblé : Grep/Glob d'abord, puis Read avec offset/limit. Ne pas relire un fichier qu'on vient d'éditer.
 - Exploration large → sous-agent `Explore` : seule sa conclusion revient dans le contexte.
-- Ouvrir seulement le doc utile : `docs/GAME-SPEC.md` (règles), `docs/ARCHITECTURE.md` (packages),
-  `docs/AGENTS.md` (rôles), `docs/ZERO-INFRA.md` (services).
+- Ouvrir seulement le doc utile : `docs/GAME-SPEC.md` (règles), `docs/MONETIZATION.md` (engagement, revenus),
+  `docs/JUICE.md` (haptique, sons, effets), `docs/ARCHITECTURE.md` (packages), `docs/AGENTS.md` (rôles),
+  `docs/ZERO-INFRA.md` (services), `docs/decisions/` (historique des décisions, le plus récent en dernier).
 - Commandes : préférer `pnpm check` aux commandes verbeuses ; filtrer avec `| tail -n 40` si besoin.
 - Réponses courtes : pas de résumé de ce qui vient d'être fait si le diff le montre.
 - Plugin `founder-skill` : toujours lancer ses skills avec `--quick`. Ne proposer une passe complète

@@ -6,19 +6,21 @@ Agent conseillé entre crochets (voir `docs/AGENTS.md`).
 ## Phase 0 — Décisions (humain)
 - [x] Premier titre : Screw Jam (modifiable ensuite grâce aux `engine-*` séparés).
 - [x] Zéro serveur, zéro coût récurrent (`docs/ZERO-INFRA.md`).
-- [ ] Valider les points **[À VALIDER]** de `docs/GAME-SPEC.md` (valeurs par défaut acceptables pour démarrer).
-- [ ] Fixer les KPI cibles : rétention J1/J7, taux de complétion des niveaux 1 à 20, revenus pub par utilisateur actif.
+- [x] Règles validées (`docs/GAME-SPEC.md` v1) + engagement/monétisation (`docs/MONETIZATION.md`) + sensations (`docs/JUICE.md`).
+- [x] KPI cibles fixés (`docs/MONETIZATION.md`).
 
 ## Phase 1 — Contrats [architect]
-- [ ] Monorepo : pnpm + Turborepo, `tsconfig` de base strict, Vitest, ESLint.
+- [x] Monorepo : pnpm + Turborepo, `tsconfig` de base strict, Vitest, ESLint.
   **DoD :** `pnpm install && pnpm typecheck && pnpm test` passent sur un repo vide de logique.
-- [ ] Geler `engine-screw/src/types.ts` et `level-tools/schema/level.schema.json` (cohérents entre eux).
+- [x] Geler `engine-screw/src/types.ts` et `level-tools/schema/level.schema.json` (cohérents entre eux).
   **DoD :** un test vérifie qu'un `LevelDef` d'exemple passe le schéma, et que 3 niveaux invalides (vis sans plaque, couleur non multiple de 3, polygone vide) sont rejetés.
-- [ ] Interfaces des ports du shell (`StoragePort`, `ClockPort`, `AdsPort`, `IapPort`, `AnalyticsPort`, `RemoteConfigPort`) avec leurs mocks.
+- [x] Interfaces des ports du shell (`StoragePort`, `ClockPort`, `AdsPort`, `IapPort`, `AnalyticsPort`, `RemoteConfigPort`, `FeedbackPort`, `NotificationsPort`) avec leurs mocks, + type `RemoteConfig`.
   **DoD :** typecheck OK, les mocks sont utilisables en test.
 
+Résultat phase 1 (2026-10-17) : `pnpm check` 9/9 OK ; level-tools 8 tests, shell 4 tests ; `pnpm levels:validate` OK. Voir `docs/decisions/0001-phase-1.md`.
+
 ## Phase 2 — Tests depuis la spec [qa], avant l'implémentation
-- [ ] Tests Vitest de `engine-screw` couvrant chaque règle de `GAME-SPEC.md` (refus si bloquée, multi-tap, cascade boîtes et toolbox, défaite toolbox pleine, victoire, near miss, undo par replay, déterminisme).
+- [ ] Tests Vitest de `engine-screw` couvrant chaque règle de `GAME-SPEC.md` (refus si bloquée, multi-tap, joker, cascade boîtes et toolbox, événements `cascade`/`toolboxDanger`, défaite toolbox pleine + `overflow`, victoire, near miss, `revive`, boosters `drill`/`extraSlot`/`undo`, déterminisme du replay). Utiliser `exampleLevel()` (`packages/engine-screw/src/fixtures.ts`) comme base.
   **DoD :** les tests compilent et échouent (moteur non implémenté) ; chaque règle de la spec est référencée par au moins un test.
 
 ## Phase 3 — Moteur, solveur, générateur [engine]

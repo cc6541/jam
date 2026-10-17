@@ -1,0 +1,103 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://jam-factory-studio/level.schema.json",
+  "title": "LevelDef (Screw Jam)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "id", "seed", "difficulty", "board", "plates", "screws", "boxQueue", "rules"],
+  "definitions": {
+    "id": { "type": "string", "minLength": 1, "maxLength": 64 },
+    "color": { "enum": ["red", "blue", "yellow", "green", "purple", "orange"] },
+    "point": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x", "y"],
+      "properties": { "x": { "type": "number" }, "y": { "type": "number" } }
+    },
+    "kind": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type"],
+          "properties": { "type": { "const": "standard" } }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type", "taps"],
+          "properties": { "type": { "const": "multiTap" }, "taps": { "type": "integer", "minimum": 2, "maximum": 5 } }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type"],
+          "properties": { "type": { "const": "joker" } }
+        }
+      ]
+    }
+  },
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "id": { "$ref": "#/definitions/id" },
+    "seed": { "type": "integer", "minimum": 0 },
+    "difficulty": { "enum": ["normal", "hard", "superHard"] },
+    "board": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["width", "height"],
+      "properties": {
+        "width": { "type": "number", "exclusiveMinimum": 0 },
+        "height": { "type": "number", "exclusiveMinimum": 0 }
+      }
+    },
+    "plates": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "z", "polygon"],
+        "properties": {
+          "id": { "$ref": "#/definitions/id" },
+          "z": { "type": "integer", "minimum": 0 },
+          "polygon": { "type": "array", "minItems": 3, "items": { "$ref": "#/definitions/point" } }
+        }
+      }
+    },
+    "screws": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "color", "kind", "at", "pins"],
+        "properties": {
+          "id": { "$ref": "#/definitions/id" },
+          "color": { "$ref": "#/definitions/color" },
+          "kind": { "$ref": "#/definitions/kind" },
+          "at": { "$ref": "#/definitions/point" },
+          "pins": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/definitions/id" } }
+        }
+      }
+    },
+    "boxQueue": { "type": "array", "minItems": 1, "items": { "$ref": "#/definitions/color" } },
+    "rules": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["boxCapacity", "activeBoxes", "toolboxSlots", "toolboxMaxSlots", "nearMiss"],
+      "properties": {
+        "boxCapacity": { "type": "integer", "minimum": 1 },
+        "activeBoxes": { "type": "integer", "minimum": 1 },
+        "toolboxSlots": { "type": "integer", "minimum": 1 },
+        "toolboxMaxSlots": { "type": "integer", "minimum": 1 },
+        "nearMiss": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["maxRemaining"],
+          "properties": { "maxRemaining": { "type": "integer", "minimum": 0 } }
+        }
+      }
+    }
+  }
+}
