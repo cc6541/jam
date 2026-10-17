@@ -21,9 +21,9 @@ Valeurs par défaut validées le 2026-10-17 : voir `docs/decisions/0001-spec-v0-
   `toolboxSlots = rules.toolboxSlots`, `moves = 0`, `status = 'playing'`.
 
 ## Tour de jeu (action `tap(screwId)`)
-- **[R3]** Vis absente, vis bloquée ou partie non `playing` : action refusée (`rejected` avec la raison
-  `unknown`, `blocked` ou `notPlaying`), l'état retourné est le même objet, inchangé.
-- **[R4]** Tout tap accepté incrémente `moves` et décrémente `tapsLeft` (événement `screwTapped`).
+- **[R3]** Partie non `playing` (vérifié en premier), vis absente ou vis bloquée : action refusée
+  (`rejected` avec la raison `notPlaying`, `unknown` ou `blocked`), l'état retourné est le même objet, inchangé.
+- **[R4]** Tout tap accepté incrémente `moves` et décrémente `tapsLeft` sans descendre sous 0 (événement `screwTapped`).
   Une vis `multiTap` reste en place tant que `tapsLeft > 0`.
 - **[R5]** À `tapsLeft = 0`, la vis sort du plateau : elle va dans la **première** boîte ouverte (ordre de `openBoxes`)
   de sa couleur qui a de la place ; sinon à la fin de la toolbox.

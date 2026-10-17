@@ -18,8 +18,10 @@ Agent conseillé entre crochets (voir `docs/AGENTS.md`).
   **DoD :** typecheck OK, les mocks sont utilisables en test.
 
 ## Phase 2 — Tests depuis la spec [qa], avant l'implémentation
-- [ ] Tests Vitest de `engine-screw` couvrant chaque règle de `GAME-SPEC.md` (refus si bloquée, multi-tap, cascade boîtes et toolbox, défaite toolbox pleine, victoire, near miss, undo par replay, déterminisme).
+- [x] Tests Vitest de `engine-screw` couvrant chaque règle de `GAME-SPEC.md` (refus si bloquée, multi-tap, cascade boîtes et toolbox, défaite toolbox pleine, victoire, near miss, undo par replay, déterminisme).
   **DoD :** les tests compilent et échouent (moteur non implémenté) ; chaque règle de la spec est référencée par au moins un test.
+  Preuve : typecheck + lint OK ; `engine.test.ts` 45 échecs (stub), `spec-coverage.test.ts` 14/14 ([R1]–[R13]).
+  `pnpm check` reste rouge jusqu'à la phase 3.
 
 ## Phase 3 — Moteur, solveur, générateur [engine]
 - [ ] Réducteur `step` + sélecteurs.
