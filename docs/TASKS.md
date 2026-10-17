@@ -45,8 +45,9 @@ Agent conseillé entre crochets (voir `docs/AGENTS.md`).
   `http://<ip-du-poste>:5173/?bench` sur le téléphone (niveau le plus chargé par défaut) et relever « 1% bas » ≥ 55.
 
 ## Phase 5 — Shell [shell]
-- [ ] Save namespacée, économie (pièces, boosters, tirelire), mocks Ads/IAP, remote config statique avec copie de secours.
+- [x] Save namespacée, économie (pièces, boosters, tirelire), mocks Ads/IAP, remote config statique avec copie de secours.
   **DoD :** tests : isolation des clés par `bundleId`, fallback si le JSON distant est invalide ou absent, horloge qui refuse les retours en arrière.
+  Preuve : `@jam/shell` 19 tests OK (NamespacedStorage, JsonDoc, MonotonicClock, loadRemoteConfig distant → cache → embarqué, économie, plafond d'interstitielles).
 - [ ] Brancher les vrais SDK (AdMob ou MAX, StoreKit 2 / Play Billing, Firebase Analytics + Crashlytics).
   **DoD :** build de debug sur appareil réel ; une pub test et un achat sandbox fonctionnent.
 
