@@ -1,0 +1,29 @@
+{
+  "name": "@jam/app-screw-jam",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc -p .",
+    "lint": "eslint src",
+    "test": "vitest run --passWithNoTests --reporter=dot --silent",
+    "dev": "vite --host",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "@jam/cross-promo": "workspace:*",
+    "@jam/engine-screw": "workspace:*",
+    "@jam/render-pixi": "workspace:*",
+    "@jam/shell": "workspace:*",
+    "@jam/ui": "workspace:*",
+    "pixi.js": "^8.6.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.3.0",
+    "vite": "^5.4.0"
+  }
+}

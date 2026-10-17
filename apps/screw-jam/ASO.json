@@ -1,0 +1,16 @@
+{
+  "status": "draft: nom Store non fixé, à relire avant soumission",
+  "limits": { "titleMax": 30, "subtitleMax": 30, "keywordsMax": 100, "descriptionMax": 4000 },
+  "fr": {
+    "title": "Screw Jam",
+    "subtitle": "Dévisse et trie les vis",
+    "keywords": "puzzle,vis,boulon,écrou,tri,casse-tête,logique,relaxant,couleurs,défi,cerveau,hors ligne",
+    "description": "Dévisse les vis libres et range-les dans la boîte de leur couleur avant que la zone tampon ne déborde.\n\n• Des centaines de niveaux calibrés par un solveur\n• Chaque couleur a aussi un motif : jouable sans distinguer les couleurs\n• Boosters : annuler, case en plus, vider la zone tampon\n• Fonctionne hors ligne"
+  },
+  "en": {
+    "title": "Screw Jam",
+    "subtitle": "Unscrew and sort the screws",
+    "keywords": "puzzle,screw,bolt,nut,sort,brain,logic,relaxing,color,challenge,offline,casual,match",
+    "description": "Unscrew the free screws and drop them in the box of their colour before the buffer overflows.\n\n• Hundreds of levels tuned by a solver\n• Every colour also has a pattern: playable without telling colours apart\n• Boosters: undo, extra slot, clear the buffer\n• Works offline"
+  }
+}

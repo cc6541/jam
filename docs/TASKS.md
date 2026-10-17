@@ -54,6 +54,11 @@ Agent conseillé entre crochets (voir `docs/AGENTS.md`).
 ## Phase 6 — App Screw Jam [ui + publisher]
 - [ ] `apps/screw-jam` : thème, `app.config.json`, UI React (menus, boutique, modale near miss, modale cross-promo).
   Prix et économie de lancement : `docs/decisions/0005-prix-et-economie-v0.md` (hypothèses à tester). Nom Store et bundleId : à fournir.
+  Fait (version navigateur, `pnpm --filter @jam/app-screw-jam dev`) : `apps/screw-jam` (thème, `app.config.json`, accueil, HUD + boosters, boutique,
+  modale near miss avec minuteur, fin de partie, modale cross-promo), `@jam/ui`, `@jam/cross-promo`. Pubs et achats : mocks (badge « Mode démo »).
+  Preuve : `pnpm check` 21 tâches OK, `pnpm build` OK ; test bout en bout Chromium : niveau 1 résolu par clics, +20 pièces, niveau 2, sauvegarde conservée après rechargement.
+  `bundleId` (`com.jamfactory.screwjam`) et nom (`Screw Jam`) sont des **placeholders** (voir `bundleIdStatus` / `displayNameStatus`).
+  **Reste :** Capacitor iOS/Android, vrais SDK (phase 5), TestFlight / test interne Play (comptes humains).
 - [ ] Cross-promo : cartes depuis le JSON statique, plafond de fréquence, liens Store avec paramètres de campagne.
 - [ ] `ASO.json` (titre, sous-titre, mots-clés, FR + EN), captures.
   **DoD :** build Capacitor iOS + Android ; TestFlight et test interne Play publiés.

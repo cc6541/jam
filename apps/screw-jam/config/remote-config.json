@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "economy": {
+    "startingCoins": 200,
+    "levelReward": 20,
+    "continueCost": 150,
+    "boosterPrices": { "undo": 60, "addToolboxSlot": 120, "clearToolbox": 200 },
+    "piggy": { "perWin": 20, "capacity": 1800 }
+  },
+  "ads": { "firstInterstitialLevel": 6, "interstitialEveryLevels": 3 },
+  "events": []
+}

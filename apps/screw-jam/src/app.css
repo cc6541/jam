@@ -1,0 +1,3 @@
+.jam-play { position: absolute; inset: 0; display: flex; flex-direction: column; padding-top: env(safe-area-inset-top); }
+.jam-board { flex: 1; min-height: 0; position: relative; }
+.jam-board canvas { display: block; width: 100%; height: 100%; }

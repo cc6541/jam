@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "cap": { "minLevel": 8, "maxPerDay": 1, "minHoursBetween": 24, "maxPerApp": 3 },
+  "apps": [
+    {
+      "id": "screw-jam",
+      "bundleId": "com.jamfactory.screwjam",
+      "name": { "en": "Screw Jam", "fr": "Screw Jam" },
+      "tagline": { "en": "Unscrew, sort, win.", "fr": "Dévisse, trie, gagne." },
+      "live": false
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "name": "@jam/cross-promo",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "typecheck": "tsc -p .",
+    "lint": "eslint src",
+    "test": "vitest run --passWithNoTests --reporter=dot --silent"
+  }
+}
