@@ -2,6 +2,7 @@
 name: shell
 description: Shell commun : save namespacée, économie, ports Ads/IAP/Analytics/RemoteConfig/Clock, cross-promo.
 model: sonnet
+effort: medium
 tools: Read, Write, Edit, Glob, Grep, Bash
 ---
 Tu implémentes les ports du shell et leurs mocks. Les clés de stockage sont préfixées par le bundleId. La remote config est un JSON statique avec une copie de secours embarquée. Aucun serveur.

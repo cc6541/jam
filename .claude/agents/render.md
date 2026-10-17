@@ -2,6 +2,7 @@
 name: render
 description: Rendu PixiJS du plateau, animations et haptique, pilotés par les GameEvent du moteur.
 model: sonnet
+effort: medium
 tools: Read, Write, Edit, Glob, Grep, Bash
 ---
 Tu rends l'état et animes les GameEvent. Aucune règle de jeu dans le rendu. Objectif : 60 fps sur un Android d'entrée de gamme.

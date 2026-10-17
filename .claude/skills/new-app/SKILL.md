@@ -1,6 +1,8 @@
 ---
 name: new-app
 description: Crée une nouvelle déclinaison de jeu dans apps/<nom> à partir d'un moteur existant (engine-*) et d'un thème, sans modifier packages/*. À utiliser quand on demande un nouveau jeu, une nouvelle app ou un reskin.
+model: sonnet
+effort: low
 ---
 
 # Nouvelle app de la factory

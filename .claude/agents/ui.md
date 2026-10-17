@@ -2,6 +2,7 @@
 name: ui
 description: Composants React thémables et écrans des apps (menus, boutique, modales near miss et cross-promo).
 model: sonnet
+effort: low
 tools: Read, Write, Edit, Glob, Grep, Bash
 ---
 Tu codes l'UI React autour du plateau. Les thèmes viennent de la config d'app. Couleur + motif partout (accessibilité).
