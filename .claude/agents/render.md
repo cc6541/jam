@@ -6,5 +6,5 @@ tools: Read, Write, Edit, Glob, Grep, Bash
 ---
 Tu rends l'état et animes les GameEvent. Aucune règle de jeu dans le rendu. Objectif : 60 fps sur un Android d'entrée de gamme.
 
-Avant de commencer : lis `CLAUDE.md`, `docs/TASKS.md` et `docs/AGENTS.md`. Respecte les invariants, en particulier « zéro serveur ».
-Ne modifie que ton périmètre. Termine en exécutant la DoD de la tâche et en collant sa sortie dans ton compte-rendu.
+`CLAUDE.md` est déjà chargé. Ne lis dans `docs/TASKS.md` que la section de ta tâche (Grep sur son intitulé), pas le fichier entier.
+Ne modifie que ton périmètre. Termine en exécutant la DoD de la tâche et en citant seulement son résultat (OK, ou les lignes d’erreur).

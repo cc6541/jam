@@ -3,11 +3,13 @@
   "private": true,
   "packageManager": "pnpm@9.12.0",
   "scripts": {
-    "build": "turbo run build",
-    "test": "turbo run test",
-    "typecheck": "turbo run typecheck",
-    "lint": "turbo run lint",
-    "levels:validate": "pnpm --filter @jam/level-tools validate"
+    "check": "turbo run typecheck lint test --output-logs=errors-only",
+    "build": "turbo run build --output-logs=errors-only",
+    "test": "turbo run test --output-logs=errors-only",
+    "typecheck": "turbo run typecheck --output-logs=errors-only",
+    "lint": "turbo run lint --output-logs=errors-only",
+    "levels:validate": "pnpm -s --filter @jam/level-tools validate",
+    "levels:stats": "pnpm -s --filter @jam/level-tools stats"
   },
   "devDependencies": {
     "turbo": "^2.1.0",

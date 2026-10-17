@@ -1,6 +1,6 @@
 # Roadmap
 
-Règle : une case n'est cochée que si sa **DoD** (Definition of Done) passe, preuve à l'appui (sortie de commande).
+Règle : une case n'est cochée que si sa **DoD** (Definition of Done) passe. Comme preuve, citer le résultat de la commande (OK, ou les lignes d’erreur).
 Agent conseillé entre crochets (voir `docs/AGENTS.md`).
 
 ## Phase 0 — Décisions (humain)
@@ -26,6 +26,8 @@ Agent conseillé entre crochets (voir `docs/AGENTS.md`).
   **DoD :** tous les tests de la phase 2 passent ; couverture ≥ 90 % sur `engine-screw`.
 - [ ] Solveur (BFS/A* avec mémoïsation d'état) + score de difficulté (profondeur, branches perdantes, taux d'échec d'un joueur aléatoire).
   **DoD :** `pnpm levels:validate` résout 50 niveaux en moins de 60 s en CI Linux.
+- [ ] `pnpm levels:stats` : une ligne par pack (nombre de niveaux, difficulté min/moy/max, niveaux invalides).
+  **DoD :** sortie de moins de 20 lignes pour 100 niveaux.
 - [ ] Générateur procédural seedé + courbe de difficulté en dents de scie.
   **DoD :** génère les niveaux 1 à 100 de `apps/screw-jam/levels/`, tous validés, difficulté non décroissante par blocs de 10.
 

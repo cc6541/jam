@@ -10,4 +10,5 @@ des moteurs par famille de mécanique, et des apps qui ne sont presque que du th
 - **Stack :** pnpm + Turborepo, TypeScript strict, Vitest, PixiJS (plateau), React (UI), Capacitor (mobile).
 
 Documents : [`CLAUDE.md`](CLAUDE.md) (règles pour les agents), [`docs/TASKS.md`](docs/TASKS.md) (roadmap),
-[`docs/GAME-SPEC.md`](docs/GAME-SPEC.md) (règles du jeu), [`docs/AGENTS.md`](docs/AGENTS.md) (organisation IA).
+[`docs/GAME-SPEC.md`](docs/GAME-SPEC.md) (règles du jeu), [`docs/AGENTS.md`](docs/AGENTS.md) (organisation IA),
+[`docs/TOKENS.md`](docs/TOKENS.md) (économie de tokens).

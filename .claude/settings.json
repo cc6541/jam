@@ -2,26 +2,44 @@
   "permissions": {
     "allow": [
       "Bash(pnpm install)",
+      "Bash(pnpm check)",
       "Bash(pnpm typecheck)",
       "Bash(pnpm test)",
       "Bash(pnpm lint)",
-      "Bash(pnpm levels:validate)"
+      "Bash(pnpm levels:validate)",
+      "Bash(pnpm levels:stats)"
     ],
     "deny": [
       "Read(./.env)",
       "Read(./.env.*)",
+      "Read(./pnpm-lock.yaml)",
       "Read(./**/node_modules/**)",
-      "Read(./**/dist/**)"
+      "Read(./**/dist/**)",
+      "Read(./**/coverage/**)",
+      "Read(./**/.turbo/**)",
+      "Read(./apps/*/ios/**)",
+      "Read(./apps/*/android/**)",
+      "Read(./apps/*/levels/**)",
+      "Read(./**/*.png)",
+      "Read(./**/*.jpg)",
+      "Read(./**/*.webp)",
+      "Read(./**/*.mp3)",
+      "Read(./**/*.ogg)"
     ]
   },
   "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|clear|compact",
+        "hooks": [
+          { "type": "command", "command": "bash \"$CLAUDE_PROJECT_DIR/scripts/claude/session-brief.sh\"" }
+        ]
+      }
+    ],
     "Stop": [
       {
         "hooks": [
-          {
-            "type": "command",
-            "command": "[ -d node_modules ] && pnpm -s typecheck || true"
-          }
+          { "type": "command", "command": "bash \"$CLAUDE_PROJECT_DIR/scripts/claude/quiet-check.sh\"" }
         ]
       }
     ]
