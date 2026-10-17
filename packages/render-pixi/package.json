@@ -1,0 +1,21 @@
+{
+  "name": "@jam/render-pixi",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "typecheck": "tsc -p .",
+    "lint": "eslint src demo",
+    "test": "vitest run --passWithNoTests --reporter=dot --silent",
+    "dev": "vite demo --host",
+    "build:demo": "vite build demo"
+  },
+  "dependencies": {
+    "@jam/engine-screw": "workspace:*",
+    "pixi.js": "^8.6.0"
+  },
+  "devDependencies": {
+    "vite": "^5.4.0"
+  }
+}

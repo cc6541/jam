@@ -9,6 +9,7 @@ import type {
   GameState,
   Id,
   LevelDef,
+  ScrewSource,
   Selectors,
   StepResult,
 } from './types';
@@ -60,8 +61,15 @@ function draft(state: GameState): GameState {
   };
 }
 
-function boxWithRoom(state: GameState, color: ColorId): BoxState | undefined {
-  return state.openBoxes.find((b) => b.color === color && b.filled.length < state.level.rules.boxCapacity);
+/** Range la vis dans la première boîte ouverte de sa couleur qui a de la place ([R5], [R7]). */
+function putInBox(state: GameState, screwId: Id, color: ColorId, from: ScrewSource): GameEvent | undefined {
+  const boxIndex = state.openBoxes.findIndex(
+    (b) => b.color === color && b.filled.length < state.level.rules.boxCapacity,
+  );
+  const box = state.openBoxes[boxIndex];
+  if (!box) return undefined;
+  box.filled.push(screwId);
+  return { type: 'screwToBox', screwId, boxColor: color, boxIndex, slot: box.filled.length - 1, from };
 }
 
 function colorOf(state: GameState, screwId: Id): ColorId {
@@ -89,9 +97,9 @@ function cascade(s: GameState, events: GameEvent[]): void {
         boxes.push(box);
         continue;
       }
-      events.push({ type: 'boxCompleted', color: box.color });
+      const next = s.level.boxQueue[s.nextBoxIndex] ?? null;
+      events.push({ type: 'boxCompleted', color: box.color, boxIndex: boxes.length, next });
       changed = true;
-      const next = s.level.boxQueue[s.nextBoxIndex];
       if (next) {
         boxes.push({ color: next, filled: [] }); // [R7] même place
         s.nextBoxIndex++;
@@ -102,14 +110,12 @@ function cascade(s: GameState, events: GameEvent[]): void {
     for (const from of ['holding', 'toolbox'] as const) {
       const kept: Id[] = [];
       for (const id of s[from]) {
-        const color = colorOf(s, id);
-        const box = boxWithRoom(s, color);
-        if (!box) {
+        const event = putInBox(s, id, colorOf(s, id), from);
+        if (!event) {
           kept.push(id);
           continue;
         }
-        box.filled.push(id);
-        events.push({ type: 'screwToBox', screwId: id, boxColor: color, from });
+        events.push(event);
         changed = true;
       }
       s[from] = kept;
@@ -139,10 +145,9 @@ function tap(state: GameState, screwId: Id): StepResult {
 
   // [R5] / [R6]
   const { color } = screw.def;
-  const box = boxWithRoom(s, color);
-  if (box) {
-    box.filled.push(screwId);
-    events.push({ type: 'screwToBox', screwId, boxColor: color, from: 'board' });
+  const boxed = putInBox(s, screwId, color, 'board');
+  if (boxed) {
+    events.push(boxed);
   } else if (s.toolbox.length < s.toolboxSlots) {
     s.toolbox.push(screwId);
     events.push({ type: 'screwToToolbox', screwId });

@@ -39,6 +39,10 @@ Agent conseillé entre crochets (voir `docs/AGENTS.md`).
 ## Phase 4 — Plateau jouable [render]
 - [ ] `render-pixi` : plateau, animations (vis qui sort, plaque qui tombe), haptique branchée sur les `GameEvent`.
   **DoD :** 60 fps mesurés sur un Android d'entrée de gamme pour le niveau le plus chargé ; aucune logique de jeu dans le rendu.
+  Fait : `@jam/render-pixi` (BoardView, director événements → animations + haptique, tweens sans horloge) ;
+  « aucune logique de jeu » imposé par ESLint ; bench Chromium headless (rendu logiciel) : 60 fps moy / 59,5 en 1 % bas, 0 erreur.
+  **Reste (humain) :** mesure sur Android d'entrée de gamme : `pnpm --filter @jam/render-pixi dev`, ouvrir
+  `http://<ip-du-poste>:5173/?bench` sur le téléphone (niveau le plus chargé par défaut) et relever « 1% bas » ≥ 55.
 
 ## Phase 5 — Shell [shell]
 - [ ] Save namespacée, économie (pièces, boosters, tirelire), mocks Ads/IAP, remote config statique avec copie de secours.

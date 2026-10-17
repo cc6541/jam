@@ -87,15 +87,18 @@ export type Action =
   | { type: 'addToolboxSlot' }
   | { type: 'clearToolbox' };
 
+export type ScrewSource = 'board' | 'toolbox' | 'holding';
+
 /** Événements émis pour le rendu, les sons, l'haptique et l'analytics (le moteur ne fait aucun effet de bord). */
 export type GameEvent =
   | { type: 'screwTapped'; screwId: Id; tapsLeft: number }
-  | { type: 'screwToBox'; screwId: Id; boxColor: ColorId; from: 'board' | 'toolbox' | 'holding' }
+  | { type: 'screwToBox'; screwId: Id; boxColor: ColorId; boxIndex: number; slot: number; from: ScrewSource }
   | { type: 'screwToToolbox'; screwId: Id }
   | { type: 'plateFell'; plateId: Id }
   | { type: 'toolboxCleared'; screwIds: Id[] }
   | { type: 'toolboxSlotAdded'; slots: number }
-  | { type: 'boxCompleted'; color: ColorId }
+  /** `next` : boîte qui prend la place `boxIndex`, ou null si la file est épuisée (l'emplacement disparaît). */
+  | { type: 'boxCompleted'; color: ColorId; boxIndex: number; next: ColorId | null }
   | { type: 'rejected'; reason: 'blocked' | 'unknown' | 'notPlaying' | 'limit' }
   | { type: 'won' }
   | { type: 'lost'; nearMiss: boolean };

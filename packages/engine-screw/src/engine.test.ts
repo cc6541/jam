@@ -215,7 +215,7 @@ describe('[R4] tap accepté et vis multiTap', () => {
     expect(state.screws['m1']).toBeUndefined();
     expect(state.moves).toBe(3);
     expect(events).toContainEqual({ type: 'screwTapped', screwId: 'm1', tapsLeft: 0 });
-    expect(events).toContainEqual({ type: 'screwToBox', screwId: 'm1', boxColor: 'red', from: 'board' });
+    expect(events).toContainEqual({ type: 'screwToBox', screwId: 'm1', boxColor: 'red', boxIndex: 0, slot: 0, from: 'board' });
   });
 
   it('une vis standard sort au premier tap', () => {
@@ -235,7 +235,7 @@ describe('[R5] destination de la vis sortie', () => {
     ]);
     expect(events).toEqual([
       { type: 'screwTapped', screwId: 'r1', tapsLeft: 0 },
-      { type: 'screwToBox', screwId: 'r1', boxColor: 'red', from: 'board' },
+      { type: 'screwToBox', screwId: 'r1', boxColor: 'red', boxIndex: 1, slot: 0, from: 'board' },
     ]);
   });
 
@@ -314,7 +314,7 @@ describe('[R7] résolution en cascade', () => {
   it('une boîte pleine part et la suivante prend sa place', () => {
     const def = level({ screws: [...reds, ...blues, ...greens], boxQueue: ['red', 'blue', 'green'] });
     const { state, events } = play(def, ['r1', 'r2', 'r3']);
-    expect(byType(events, 'boxCompleted')).toEqual([{ type: 'boxCompleted', color: 'red' }]);
+    expect(byType(events, 'boxCompleted')).toEqual([{ type: 'boxCompleted', color: 'red', boxIndex: 0, next: 'green' }]);
     expect(state.openBoxes).toEqual([
       { color: 'green', filled: [] },
       { color: 'blue', filled: [] },
@@ -336,8 +336,8 @@ describe('[R7] résolution en cascade', () => {
     expect(state.toolbox).toEqual(['y1']);
     expect(state.openBoxes[0]).toEqual({ color: 'green', filled: ['g2', 'g1'] });
     expect(byType(events, 'screwToBox').filter((e) => e.from === 'toolbox')).toEqual([
-      { type: 'screwToBox', screwId: 'g2', boxColor: 'green', from: 'toolbox' },
-      { type: 'screwToBox', screwId: 'g1', boxColor: 'green', from: 'toolbox' },
+      { type: 'screwToBox', screwId: 'g2', boxColor: 'green', boxIndex: 0, slot: 0, from: 'toolbox' },
+      { type: 'screwToBox', screwId: 'g1', boxColor: 'green', boxIndex: 0, slot: 1, from: 'toolbox' },
     ]);
   });
 
@@ -352,12 +352,12 @@ describe('[R7] résolution en cascade', () => {
     expect(state.openBoxes).toEqual([{ color: 'yellow', filled: ['y1'] }]);
     expect(byType(events, 'boxCompleted', 'screwToBox').filter((e) => e.type === 'boxCompleted' || e.from === 'toolbox'))
       .toEqual([
-        { type: 'boxCompleted', color: 'red' },
-        { type: 'screwToBox', screwId: 'g1', boxColor: 'green', from: 'toolbox' },
-        { type: 'screwToBox', screwId: 'g2', boxColor: 'green', from: 'toolbox' },
-        { type: 'screwToBox', screwId: 'g3', boxColor: 'green', from: 'toolbox' },
-        { type: 'boxCompleted', color: 'green' },
-        { type: 'screwToBox', screwId: 'y1', boxColor: 'yellow', from: 'toolbox' },
+        { type: 'boxCompleted', color: 'red', boxIndex: 0, next: 'green' },
+        { type: 'screwToBox', screwId: 'g1', boxColor: 'green', boxIndex: 0, slot: 0, from: 'toolbox' },
+        { type: 'screwToBox', screwId: 'g2', boxColor: 'green', boxIndex: 0, slot: 1, from: 'toolbox' },
+        { type: 'screwToBox', screwId: 'g3', boxColor: 'green', boxIndex: 0, slot: 2, from: 'toolbox' },
+        { type: 'boxCompleted', color: 'green', boxIndex: 0, next: 'yellow' },
+        { type: 'screwToBox', screwId: 'y1', boxColor: 'yellow', boxIndex: 0, slot: 0, from: 'toolbox' },
       ]);
   });
 });
@@ -476,8 +476,8 @@ describe('[R11] booster clearToolbox', () => {
     expect(state.toolbox).toEqual([]);
     expect(state.openBoxes).toEqual([{ color: 'green', filled: ['g1', 'g2'] }]);
     expect(byType(events, 'screwToBox').filter((e) => e.from !== 'board')).toEqual([
-      { type: 'screwToBox', screwId: 'g1', boxColor: 'green', from: 'holding' },
-      { type: 'screwToBox', screwId: 'g2', boxColor: 'green', from: 'toolbox' },
+      { type: 'screwToBox', screwId: 'g1', boxColor: 'green', boxIndex: 0, slot: 0, from: 'holding' },
+      { type: 'screwToBox', screwId: 'g2', boxColor: 'green', boxIndex: 0, slot: 1, from: 'toolbox' },
     ]);
   });
 

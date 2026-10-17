@@ -16,6 +16,25 @@ export default tseslint.config(
     rules: { '@typescript-eslint/no-non-null-assertion': 'off' },
   },
   {
+    // DoD phase 4 : le rendu affiche et anime, il ne joue pas (l'app appelle le moteur).
+    files: ['packages/render-pixi/src/**/*.ts'],
+    ignores: ['**/*.test.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@jam/engine-screw',
+              importNames: ['engine', 'solve', 'generateLevel', 'Rng'],
+              message: 'Aucune logique de jeu dans le rendu : il reçoit des StepResult.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     // Invariant 4 : moteurs purs et déterministes.
     files: ['packages/engine-*/src/**/*.ts'],
     ignores: ['**/*.test.ts'],
