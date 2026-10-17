@@ -1,0 +1,9 @@
+node_modules/
+dist/
+coverage/
+.turbo/
+ios/App/Pods/
+android/.gradle/
+*.zip
+.env
+.env.*
