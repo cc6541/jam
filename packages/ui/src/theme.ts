@@ -1,49 +1,59 @@
 import type { CSSProperties } from 'react';
 
-/** Thème d'app : variables CSS posées sur le conteneur racine (aucune couleur en dur dans les composants). */
+/** Thème d'app : variables CSS posées sur le conteneur racine (aucune couleur d'app en dur dans les composants). */
 export interface UiTheme {
-  background: string;
+  /** Dégradé du fond (haut → bas). */
+  bgTop: string;
+  bgBottom: string;
+  /** Cartes et modales. */
   surface: string;
+  surfaceAlt: string;
   text: string;
   textMuted: string;
+  /** Action principale (vert « jouer ») et son bord en relief. */
   primary: string;
-  onPrimary: string;
+  primaryDark: string;
+  /** Action secondaire (bleu). */
+  secondary: string;
+  secondaryDark: string;
+  /** Écrous, récompenses. */
   accent: string;
   danger: string;
-  /** Panneau métal (bord) et néon d'accent (nom du monde). */
-  panelEdge: string;
-  neon: string;
   radius: string;
   fontFamily: string;
 }
 
 export const DEFAULT_UI_THEME: UiTheme = {
-  background: '#1e2433',
-  surface: '#2c3448',
-  text: '#f4f6fb',
-  textMuted: '#aab3c8',
-  primary: '#3e8ef7',
-  onPrimary: '#ffffff',
-  accent: '#f5c33b',
-  danger: '#e5484d',
-  panelEdge: '#2b303b',
-  neon: '#3fd8ff',
-  radius: '14px',
-  fontFamily: "ui-rounded, 'SF Pro Rounded', 'Arial Rounded MT Bold', 'Segoe UI', system-ui, sans-serif",
+  bgTop: '#5cc4ff',
+  bgBottom: '#2f7fe0',
+  surface: '#ffffff',
+  surfaceAlt: '#eef4fb',
+  text: '#1d2b4f',
+  textMuted: '#5b6b8c',
+  primary: '#2fbf5b',
+  primaryDark: '#1d8a3f',
+  secondary: '#2f8cf5',
+  secondaryDark: '#1b5fb8',
+  accent: '#ffc928',
+  danger: '#f0444b',
+  radius: '18px',
+  fontFamily: "Fredoka, ui-rounded, 'SF Pro Rounded', 'Arial Rounded MT Bold', system-ui, sans-serif",
 };
 
 export function themeStyle(theme: UiTheme): CSSProperties {
   return {
-    '--jam-bg': theme.background,
+    '--jam-bg-top': theme.bgTop,
+    '--jam-bg-bottom': theme.bgBottom,
     '--jam-surface': theme.surface,
+    '--jam-surface-alt': theme.surfaceAlt,
     '--jam-text': theme.text,
     '--jam-muted': theme.textMuted,
     '--jam-primary': theme.primary,
-    '--jam-on-primary': theme.onPrimary,
+    '--jam-primary-dark': theme.primaryDark,
+    '--jam-secondary': theme.secondary,
+    '--jam-secondary-dark': theme.secondaryDark,
     '--jam-accent': theme.accent,
     '--jam-danger': theme.danger,
-    '--jam-panel-edge': theme.panelEdge,
-    '--jam-neon': theme.neon,
     '--jam-radius': theme.radius,
     fontFamily: theme.fontFamily,
   } as CSSProperties;

@@ -1,4 +1,5 @@
 // Mise en page pure : du repère du niveau au repère écran. Aucune dépendance à Pixi.
+// Disposition du genre : boîtes en haut, zone tampon juste dessous, plateau au centre (zoomé sur son contenu).
 import type { LevelDef, Point } from '@jam/engine-screw';
 
 export interface Rect {
@@ -9,49 +10,82 @@ export interface Rect {
 }
 
 export interface Layout {
-  /** Zone des boîtes ouvertes, en haut. */
+  /** Rangée des boîtes ouvertes, en haut. */
   boxes: Rect;
-  /** Plateau, au milieu. */
-  board: Rect;
-  /** Rangée des emplacements de la toolbox, en bas. */
-  toolbox: Rect;
-  /** Bac complet de la toolbox (titre, rangée, numéros). */
+  /** Bac de la toolbox (fond). */
   tray: Rect;
+  /** Rangée des emplacements de la toolbox, dans le bac. */
+  toolbox: Rect;
+  /** Plateau à l'écran : cadre du contenu du niveau, centré. */
+  board: Rect;
+  /** Coin haut-gauche du contenu, dans le repère du niveau. */
+  origin: Point;
   /** Pixels écran par unité du niveau. */
   scale: number;
   screwRadius: number;
 }
 
-const GAP = 12;
+const GAP = 10;
+/** Marge autour du contenu, en unités du niveau (place pour les têtes de vis et les ombres). */
+const CONTENT_PAD = 5;
+/** Zoom maximal : un petit niveau grossit, sans devenir caricatural. */
+const MAX_SCALE = 7;
 
-export function computeLayout(level: LevelDef, viewport: { width: number; height: number }): Layout {
-  const boxesHeight = Math.round(viewport.height * 0.14);
-  const toolboxHeight = Math.round(viewport.height * 0.125);
-  const available = {
-    width: viewport.width - 2 * GAP,
-    height: viewport.height - boxesHeight - toolboxHeight - 4 * GAP,
+const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
+
+/** Rectangle englobant toutes les plaques du niveau. */
+export function contentBounds(level: Pick<LevelDef, 'plates' | 'board'>): Rect {
+  const points = level.plates.flatMap((p) => p.polygon);
+  if (points.length === 0) return { x: 0, y: 0, width: level.board.width, height: level.board.height };
+  const xs = points.map((p) => p.x);
+  const ys = points.map((p) => p.y);
+  const x = Math.min(...xs);
+  const y = Math.min(...ys);
+  return { x, y, width: Math.max(...xs) - x, height: Math.max(...ys) - y };
+}
+
+export function computeLayout(level: Pick<LevelDef, 'plates' | 'board' | 'rules'>, viewport: { width: number; height: number }): Layout {
+  const { width: w, height: h } = viewport;
+  const boxesH = clamp(h * 0.13, 64, 112);
+  const trayH = clamp(h * 0.09, 50, 78);
+  const boxes = { x: GAP, y: GAP, width: w - 2 * GAP, height: boxesH };
+  const tray = { x: GAP + 6, y: boxes.y + boxesH + GAP * 0.6, width: w - 2 * GAP - 12, height: trayH };
+  const toolbox = { x: tray.x + 10, y: tray.y + 6, width: tray.width - 20, height: trayH - 12 };
+
+  const areaTop = tray.y + trayH + GAP * 1.8;
+  const area = { x: GAP, y: areaTop, width: w - 2 * GAP, height: Math.max(40, h - areaTop - GAP) };
+  const content = contentBounds(level);
+  const cw = content.width + 2 * CONTENT_PAD;
+  const ch = content.height + 2 * CONTENT_PAD;
+  const scale = Math.min(area.width / cw, area.height / ch, MAX_SCALE);
+  const board = {
+    x: area.x + (area.width - cw * scale) / 2,
+    y: area.y + (area.height - ch * scale) / 2,
+    width: cw * scale,
+    height: ch * scale,
   };
-  const scale = Math.min(available.width / level.board.width, available.height / level.board.height);
-  const width = level.board.width * scale;
-  const height = level.board.height * scale;
-  return {
-    boxes: { x: GAP, y: GAP, width: viewport.width - 2 * GAP, height: boxesHeight },
-    board: { x: (viewport.width - width) / 2, y: boxesHeight + 2 * GAP + (available.height - height) / 2, width, height },
-    tray: { x: GAP, y: viewport.height - toolboxHeight - GAP, width: viewport.width - 2 * GAP, height: toolboxHeight },
-    // Rangée des emplacements : sous le titre (22 px) et au-dessus des numéros (22 px).
-    toolbox: {
-      x: GAP + 10,
-      y: viewport.height - toolboxHeight - GAP + 22,
-      width: viewport.width - 2 * GAP - 20,
-      height: toolboxHeight - 44,
-    },
-    scale,
-    screwRadius: Math.max(8, Math.min(22, 3.2 * scale)),
-  };
+
+  // Une vis doit tenir partout où elle va : sur le plateau, dans un emplacement de toolbox, dans une boîte.
+  const capacity = level.rules.boxCapacity;
+  const boxCount = Math.max(1, level.rules.activeBoxes);
+  const maxSlots = Math.max(1, level.rules.toolboxMaxSlots);
+  const screwRadius = clamp(
+    Math.min(
+      3.8 * scale,
+      (toolbox.width / maxSlots) * 0.38,
+      toolbox.height * 0.4,
+      (boxes.width / boxCount - 28) / (2.5 * capacity + 1),
+      boxesH * 0.26,
+    ),
+    9,
+    26,
+  );
+
+  return { boxes, tray, toolbox, board, origin: { x: content.x - CONTENT_PAD, y: content.y - CONTENT_PAD }, scale, screwRadius };
 }
 
 export function toScreen(layout: Layout, p: Point): Point {
-  return { x: layout.board.x + p.x * layout.scale, y: layout.board.y + p.y * layout.scale };
+  return { x: layout.board.x + (p.x - layout.origin.x) * layout.scale, y: layout.board.y + (p.y - layout.origin.y) * layout.scale };
 }
 
 /** Centre de l'emplacement `index` parmi `count` répartis horizontalement dans `rect`. */
@@ -60,9 +94,18 @@ export function slotCenter(rect: Rect, index: number, count: number): Point {
   return { x: rect.x + step * (index + 0.5), y: rect.y + rect.height / 2 };
 }
 
+/** Taille d'une boîte (caisse) pour `capacity` vis. */
+export function crateSize(layout: Layout, count: number, capacity: number): { width: number; height: number } {
+  const r = layout.screwRadius;
+  return {
+    width: Math.min(layout.boxes.width / Math.max(1, count) - 14, r * 2.5 * capacity + r * 1.2),
+    height: Math.min(layout.boxes.height * 0.92, r * 3.6),
+  };
+}
+
 /** Position d'une vis rangée dans la boîte `box` (parmi `boxes`), à l'emplacement `slot` sur `capacity`. */
 export function boxScrewCenter(layout: Layout, box: number, boxes: number, slot: number, capacity: number): Point {
   const center = slotCenter(layout.boxes, box, boxes);
-  const spacing = layout.screwRadius * 2.4;
-  return { x: center.x + (slot - (capacity - 1) / 2) * spacing, y: center.y + layout.screwRadius * 0.4 };
+  const spacing = layout.screwRadius * 2.5;
+  return { x: center.x + (slot - (capacity - 1) / 2) * spacing, y: center.y + layout.screwRadius * 0.35 };
 }

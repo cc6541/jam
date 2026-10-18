@@ -1,6 +1,6 @@
-// Dessin vectoriel de l'habillage « atelier » : aucune règle de jeu, seulement des formes.
-// Tout est fait d'aplats, de traits et de reflets (pas de filtres) pour tenir 60 fps sur mobile d'entrée de gamme.
-import { Container, Graphics, Text } from 'pixi.js';
+// Dessin vectoriel de l'habillage : aucune règle de jeu, seulement des formes.
+// Aplats, traits et reflets uniquement (pas de filtre) ; les décors sont ensuite figés en textures par la vue.
+import { Container, Graphics } from 'pixi.js';
 import type { PatternId, Point } from '@jam/engine-screw';
 import type { Layout, Rect } from './layout';
 import { slotCenter } from './layout';
@@ -32,168 +32,159 @@ function bounds(points: readonly Point[]): Rect {
   return { x, y, width: Math.max(...xs) - x, height: Math.max(...ys) - y };
 }
 
-/** Veinage : traits horizontaux ondulés, découpés par le polygone (masque). */
-function woodGrain(points: readonly Point[], mat: Material): Container {
+/** Tracé d'un polygone à coins arrondis (rayon borné par la moitié de l'arête la plus courte). */
+export function roundedPath(g: Graphics, points: readonly Point[], radius: number): Graphics {
+  const n = points.length;
+  if (n < 3) return g;
+  const at = (i: number) => points[((i % n) + n) % n] as Point;
+  let r = radius;
+  for (let i = 0; i < n; i++) r = Math.min(r, Math.hypot(at(i + 1).x - at(i).x, at(i + 1).y - at(i).y) / 2);
+  const mid = (a: Point, b: Point) => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
+  const start = mid(at(n - 1), at(0));
+  g.moveTo(start.x, start.y);
+  for (let i = 0; i < n; i++) {
+    const m = mid(at(i), at(i + 1));
+    g.arcTo(at(i).x, at(i).y, m.x, m.y, r);
+  }
+  return g.closePath();
+}
+
+/** Veinage : traits ondulés découpés par la planche (masque). */
+function woodGrain(points: readonly Point[], mat: Material, radius: number): Container {
   const c = new Container();
   const b = bounds(points);
   const lines = new Graphics();
-  const step = Math.max(7, b.height / 14);
+  const step = Math.max(6, b.height / 12);
   for (let y = b.y + step / 2, i = 0; y < b.y + b.height; y += step, i++) {
-    const wobble = 1.5 + (i % 3);
+    const wobble = 1.2 + (i % 3) * 0.8;
     lines
       .moveTo(b.x, y)
       .bezierCurveTo(b.x + b.width * 0.3, y - wobble, b.x + b.width * 0.65, y + wobble, b.x + b.width, y)
-      .stroke({ width: i % 4 === 0 ? 1.6 : 1, color: mat.grain ?? mat.dark, alpha: 0.45 });
+      .stroke({ width: i % 4 === 0 ? 1.6 : 1, color: mat.grain ?? mat.dark, alpha: 0.4 });
   }
-  const mask = new Graphics().poly([...points]).fill(0xffffff);
+  const mask = roundedPath(new Graphics(), points, radius).fill(0xffffff);
   lines.mask = mask;
   c.addChild(lines, mask);
   return c;
 }
 
-/** Plaque métal ou bois : ombre portée, corps, biseau clair, veinage éventuel. */
-export function plateGraphic(points: Point[], kind: 'metal' | 'wood', theme: Theme): Container {
-  const mat = theme.plate[kind];
+/**
+ * Planche percée : ombre portée (plus marquée en hauteur), bois veiné, biseau clair, trous de vis.
+ * Les trous restent visibles quand la vis sort : c'est ce qui rend l'état lisible.
+ */
+export function plateGraphic(points: Point[], layer: number, theme: Theme, holes: Point[], holeRadius: number): Container {
+  const mat = theme.plate.layers[layer % theme.plate.layers.length] as Material;
+  const b = bounds(points);
+  const radius = Math.min(14, Math.min(b.width, b.height) * 0.18);
+  const lift = 4 + Math.min(layer, 4) * 1.5;
   const c = new Container();
   c.addChild(
-    new Graphics().poly(points.map((p) => ({ x: p.x + 2.5, y: p.y + 4 }))).fill({ color: 0x000000, alpha: 0.35 }),
-    new Graphics()
-      .poly(points)
-      .fill({ color: mat.base, alpha: theme.plate.alpha })
-      .stroke({ width: 2.5, color: mat.dark, alpha: 0.95 }),
+    roundedPath(new Graphics(), points.map((p) => ({ x: p.x + lift * 0.4, y: p.y + lift })), radius).fill({ color: 0x0b1a33, alpha: 0.28 }),
+    roundedPath(new Graphics(), points, radius).fill({ color: mat.base, alpha: theme.plate.alpha }).stroke({ width: 2.5, color: mat.dark }),
+    woodGrain(points, mat, radius),
+    roundedPath(new Graphics(), inset(points, 0.94), radius * 0.8).stroke({ width: 2, color: mat.light, alpha: 0.6 }),
   );
-  if (kind === 'wood') c.addChild(woodGrain(points, mat));
-  c.addChild(new Graphics().poly(inset(points, 0.93)).stroke({ width: 2, color: mat.light, alpha: 0.5 }));
+  const g = new Graphics();
+  for (const h of holes) {
+    g.circle(h.x, h.y, holeRadius).fill(theme.plate.hole).stroke({ width: 1.5, color: mat.dark, alpha: 0.8 });
+    g.circle(h.x, h.y + holeRadius * 0.18, holeRadius * 0.78).fill(theme.plate.holeDeep);
+    // Reflet sous le trou : on part du début de l'arc, sinon le tracé se relie à l'origine.
+    const start = Math.PI * 0.15;
+    g.moveTo(h.x + Math.cos(start) * (holeRadius + 1), h.y + Math.sin(start) * (holeRadius + 1))
+      .arc(h.x, h.y, holeRadius + 1, start, Math.PI * 0.85)
+      .stroke({ width: 1.5, color: mat.light, alpha: 0.7 });
+  }
+  c.addChild(g);
   return c;
 }
 
-/** Cadre en bois autour du plateau, creux sombre au centre, vis de coin. */
-export function frameGraphic(board: Rect, theme: Theme): Container {
-  const { wood } = theme.frame;
-  const pad = 11;
-  const outer = { x: board.x - pad, y: board.y - pad, width: board.width + 2 * pad, height: board.height + 2 * pad };
-  const c = new Container();
-  c.addChild(
-    new Graphics().roundRect(outer.x + 2, outer.y + 5, outer.width, outer.height, 16).fill({ color: 0x000000, alpha: 0.4 }),
-    new Graphics().roundRect(outer.x, outer.y, outer.width, outer.height, 16).fill(wood.base).stroke({ width: 3, color: wood.dark }),
-  );
-  const outline = [
-    { x: outer.x, y: outer.y },
-    { x: outer.x + outer.width, y: outer.y },
-    { x: outer.x + outer.width, y: outer.y + outer.height },
-    { x: outer.x, y: outer.y + outer.height },
-  ];
-  c.addChild(woodGrain(outline, wood));
-  c.addChild(
-    new Graphics().roundRect(outer.x + 2, outer.y + 2, outer.width - 4, outer.height - 4, 14).stroke({ width: 2, color: wood.light, alpha: 0.6 }),
-    new Graphics().roundRect(board.x - 3, board.y - 3, board.width + 6, board.height + 6, 9).fill(theme.frame.recess).stroke({ width: 3, color: shade(wood.dark, -0.4) }),
-  );
-  for (const [x, y] of [
-    [outer.x + 7, outer.y + 7],
-    [outer.x + outer.width - 7, outer.y + 7],
-    [outer.x + 7, outer.y + outer.height - 7],
-    [outer.x + outer.width - 7, outer.y + outer.height - 7],
-  ] as const) {
-    c.addChild(
-      new Graphics()
-        .circle(x, y, 4)
-        .fill(theme.tray.metal.base)
-        .stroke({ width: 1.5, color: theme.tray.metal.dark })
-        .moveTo(x - 2.4, y - 2.4)
-        .lineTo(x + 2.4, y + 2.4)
-        .stroke({ width: 1.2, color: theme.tray.metal.dark }),
-    );
-  }
-  return c;
+/** Tapis translucide sous le plateau : délimite la zone de jeu sans l'enfermer. */
+export function matGraphic(board: Rect, theme: Theme): Graphics {
+  return new Graphics()
+    .roundRect(board.x - 6, board.y - 6, board.width + 12, board.height + 12, 22)
+    .fill({ color: theme.mat.fill, alpha: theme.mat.alpha })
+    .stroke({ width: 2, color: 0xffffff, alpha: theme.mat.alpha * 1.6 });
 }
 
-const label = (text: string, size: number, fill: number, outline: number) => {
-  const t = new Text({ text, style: { fill, fontSize: size, fontWeight: '800', stroke: { color: outline, width: Math.max(2, size / 4) } } });
-  t.anchor.set(0.5);
-  return t;
-};
-
-/** Bac de toolbox : plaque métal, titre, emplacements numérotés (tous visibles, jusqu'au maximum). */
-export function trayGraphic(layout: Layout, theme: Theme, maxSlots: number, title: string): Container {
-  const { tray } = layout;
-  const mat = theme.tray.metal;
-  const c = new Container();
-  c.addChild(
-    new Graphics().roundRect(tray.x + 2, tray.y + 5, tray.width, tray.height, 14).fill({ color: 0x000000, alpha: 0.4 }),
-    new Graphics().roundRect(tray.x, tray.y, tray.width, tray.height, 14).fill(mat.base).stroke({ width: 3, color: mat.dark }),
-    new Graphics().roundRect(tray.x + 3, tray.y + 3, tray.width - 6, tray.height - 6, 11).stroke({ width: 2, color: mat.light, alpha: 0.7 }),
-    new Graphics()
-      .roundRect(layout.toolbox.x - 6, layout.toolbox.y - 4, layout.toolbox.width + 12, layout.toolbox.height + 8, 10)
-      .fill({ color: shade(mat.dark, -0.35), alpha: 0.9 }),
-  );
-  const title_ = label(title, 14, theme.tray.text, shade(mat.dark, -0.5));
-  title_.position.set(tray.x + tray.width / 2, tray.y + 11);
-  c.addChild(title_);
-  for (const x of [tray.x + 14, tray.x + tray.width - 14]) {
-    c.addChild(new Graphics().circle(x, tray.y + 11, 4).fill(mat.light).stroke({ width: 1.5, color: mat.dark }));
-  }
-  const step = layout.toolbox.width / maxSlots;
-  const side = Math.min(step * 0.9, layout.screwRadius * 2.6);
+/** Bac de la toolbox : panneau blanc, emplacements creusés. */
+export function trayGraphic(layout: Layout, theme: Theme, maxSlots: number): Graphics {
+  const { tray, screwRadius: r } = layout;
+  const g = new Graphics()
+    .roundRect(tray.x, tray.y + 4, tray.width, tray.height, 18)
+    .fill({ color: 0x0b1a33, alpha: 0.18 })
+    .roundRect(tray.x, tray.y, tray.width, tray.height, 18)
+    .fill({ color: theme.tray.fill, alpha: theme.tray.alpha })
+    .stroke({ width: 2, color: theme.tray.edge });
   for (let i = 0; i < maxSlots; i++) {
     const at = slotCenter(layout.toolbox, i, maxSlots);
-    c.addChild(
-      new Graphics()
-        .roundRect(at.x - side / 2, at.y - side / 2, side, side, 8)
-        .fill(theme.tray.slot)
-        .stroke({ width: 2, color: theme.tray.slotEdge })
-        .roundRect(at.x - side / 2 + 2, at.y - side / 2 + side * 0.55, side - 4, side * 0.4, 6)
-        .fill({ color: 0x000000, alpha: 0.18 }),
-    );
-    const n = label(String(i + 1), 11, theme.tray.text, shade(mat.dark, -0.5));
-    n.position.set(at.x, layout.toolbox.y + layout.toolbox.height + 11);
-    c.addChild(n);
-  }
-  return c;
-}
-
-/** Emplacements pas encore débloqués : voile sombre et « + ». */
-export function lockedSlots(layout: Layout, from: number, maxSlots: number): Graphics {
-  const g = new Graphics();
-  const side = Math.min((layout.toolbox.width / maxSlots) * 0.9, layout.screwRadius * 2.6);
-  for (let i = from; i < maxSlots; i++) {
-    const at = slotCenter(layout.toolbox, i, maxSlots);
-    const k = side * 0.18;
-    g.roundRect(at.x - side / 2, at.y - side / 2, side, side, 8)
-      .fill({ color: 0x0b0d12, alpha: 0.55 })
-      .moveTo(at.x - k, at.y)
-      .lineTo(at.x + k, at.y)
-      .moveTo(at.x, at.y - k)
-      .lineTo(at.x, at.y + k)
-      .stroke({ width: 2.5, color: 0xffffff, alpha: 0.45, cap: 'round' });
+    g.circle(at.x, at.y, r * 1.12).fill(theme.tray.hole).stroke({ width: 2, color: theme.tray.holeRim });
+    g.circle(at.x, at.y - r * 0.12, r * 0.95).fill({ color: theme.tray.holeRim, alpha: 0.28 });
   }
   return g;
 }
 
-/** Caisse d'une couleur : métal sombre, liseré coloré, fond creux. */
-export function crateGraphic(rect: Rect, fill: number, theme: Theme): Graphics {
-  const mat = theme.crate.metal;
-  return new Graphics()
-    .roundRect(rect.x + 1.5, rect.y + 4, rect.width, rect.height, 12)
-    .fill({ color: 0x000000, alpha: 0.4 })
-    .roundRect(rect.x, rect.y, rect.width, rect.height, 12)
-    .fill(mat.base)
-    .stroke({ width: 3, color: mat.dark })
-    .roundRect(rect.x + 5, rect.y + 5, rect.width - 10, rect.height - 10, 8)
-    .fill(theme.crate.recess)
-    .stroke({ width: 3, color: fill })
-    .roundRect(rect.x + 5, rect.y + 5, rect.width - 10, 7, 4)
-    .fill({ color: fill, alpha: 0.85 });
+/** Emplacements pas encore débloqués : pastille claire avec « + ». */
+export function lockedSlots(layout: Layout, theme: Theme, from: number, maxSlots: number): Graphics {
+  const g = new Graphics();
+  const r = layout.screwRadius;
+  for (let i = from; i < maxSlots; i++) {
+    const at = slotCenter(layout.toolbox, i, maxSlots);
+    const k = r * 0.45;
+    g.circle(at.x, at.y, r * 1.14)
+      .fill(theme.tray.locked)
+      .stroke({ width: 2, color: theme.tray.edge })
+      .moveTo(at.x - k, at.y)
+      .lineTo(at.x + k, at.y)
+      .moveTo(at.x, at.y - k)
+      .lineTo(at.x, at.y + k)
+      .stroke({ width: Math.max(2.5, r * 0.22), color: theme.tray.lockedIcon, cap: 'round' });
+  }
+  return g;
 }
 
-/** Tête de vis : dôme bombé, anneau sombre, reflet, motif gravé (couleur + motif, invariant 6). */
+/** Caisse colorée : corps, bandeau avant plus sombre, trous où viendront les vis. */
+export function crateBody(rect: Rect, fill: number, holes: Point[], holeRadius: number, theme: Theme): Graphics {
+  const g = new Graphics()
+    .roundRect(rect.x, rect.y + 5, rect.width, rect.height, 14)
+    .fill({ color: 0x0b1a33, alpha: 0.25 })
+    .roundRect(rect.x, rect.y, rect.width, rect.height, 14)
+    .fill(fill)
+    .stroke({ width: 2.5, color: shade(fill, -0.45) })
+    .roundRect(rect.x + 3, rect.y + rect.height * 0.62, rect.width - 6, rect.height * 0.38 - 3, 10)
+    .fill({ color: shade(fill, -0.22) })
+    .roundRect(rect.x + 4, rect.y + 3, rect.width - 8, rect.height * 0.22, 9)
+    .fill({ color: 0xffffff, alpha: 0.28 });
+  for (const h of holes) {
+    g.circle(h.x, h.y, holeRadius).fill(theme.crate.hole).stroke({ width: 1.5, color: shade(fill, -0.55) });
+  }
+  return g;
+}
+
+/** Couvercle de caisse (animé à la fermeture). */
+export function crateLid(rect: Rect, fill: number): Graphics {
+  const handleW = rect.width * 0.3;
+  return new Graphics()
+    .roundRect(rect.x - 3, rect.y - 3, rect.width + 6, rect.height + 6, 15)
+    .fill(shade(fill, 0.08))
+    .stroke({ width: 2.5, color: shade(fill, -0.45) })
+    .roundRect(rect.x + 4, rect.y + 2, rect.width - 8, rect.height * 0.25, 9)
+    .fill({ color: 0xffffff, alpha: 0.3 })
+    .roundRect(rect.x + (rect.width - handleW) / 2, rect.y + rect.height * 0.42, handleW, rect.height * 0.16, 6)
+    .fill(shade(fill, -0.35));
+}
+
+/** Tête de vis : anneau sombre, dôme coloré, reflet, motif gravé (couleur + motif, invariant 6), liseré blanc. */
 export function screwHead(g: Graphics, r: number, style: ScrewStyle): void {
-  const rim = Math.max(2, r / 7);
-  g.circle(0, 0, r).fill(shade(style.fill, -0.18)).stroke({ width: rim, color: shade(style.fill, -0.62) });
-  g.circle(0, 0, r * 0.8).fill(style.fill);
-  g.circle(-r * 0.16, -r * 0.2, r * 0.52).fill({ color: shade(style.fill, 0.45), alpha: 0.3 });
-  drawPattern(g, style.pattern, r * 0.55, 0x000000, 0.35, r * 0.07);
-  drawPattern(g, style.pattern, r * 0.55, 0xffffff, 0.92, 0);
-  g.ellipse(-r * 0.32, -r * 0.5, r * 0.3, r * 0.14).fill({ color: 0xffffff, alpha: 0.55 });
+  g.circle(0, 0, r).fill(shade(style.fill, -0.3)).stroke({ width: Math.max(1.5, r / 10), color: 0xffffff, alpha: 0.9 });
+  g.circle(0, 0, r * 0.84).fill(style.fill);
+  g.circle(-r * 0.12, -r * 0.16, r * 0.6).fill({ color: shade(style.fill, 0.4), alpha: 0.35 });
+  drawPattern(g, style.pattern, r * 0.52, 0x000000, 0.32, r * 0.07);
+  drawPattern(g, style.pattern, r * 0.52, 0xffffff, 0.95, 0);
+  g.ellipse(-r * 0.34, -r * 0.5, r * 0.28, r * 0.13).fill({ color: 0xffffff, alpha: 0.6 });
+}
+
+export function screwShadow(g: Graphics, r: number): void {
+  g.circle(0, 0, r * 1.02).fill({ color: 0x0b1a33, alpha: 0.32 });
 }
 
 export function drawPattern(g: Graphics, pattern: PatternId, r: number, color: number, alpha: number, offset: number): void {

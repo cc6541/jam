@@ -11,6 +11,7 @@
     "build": "vite build"
   },
   "dependencies": {
+    "@fontsource/fredoka": "5",
     "@jam/cross-promo": "workspace:*",
     "@jam/engine-screw": "workspace:*",
     "@jam/render-pixi": "workspace:*",

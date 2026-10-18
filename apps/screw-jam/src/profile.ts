@@ -11,6 +11,13 @@ import {
 } from '@jam/shell';
 import { PRODUCTS, STARTER_BOOSTERS, type ProductId } from './products';
 
+export interface Settings {
+  sound: boolean;
+  haptics: boolean;
+}
+
+export const DEFAULT_SETTINGS: Settings = { sound: true, haptics: true };
+
 export interface Profile {
   wallet: Wallet;
   /** Prochain niveau à jouer (1-based). */
@@ -18,9 +25,15 @@ export interface Profile {
   noAds: boolean;
   starterBought: boolean;
   promo: PromoState;
+  settings: Settings;
 }
 
 export const PROFILE_VERSION = 1;
+
+/** Sauvegardes antérieures aux réglages : on complète sans changer de version. */
+export function withDefaults(profile: Profile): Profile {
+  return { ...profile, settings: { ...DEFAULT_SETTINGS, ...profile.settings } };
+}
 
 export const newProfile = (economy: EconomyConfig): Profile => ({
   wallet: newWallet(economy),
@@ -28,7 +41,13 @@ export const newProfile = (economy: EconomyConfig): Profile => ({
   noAds: false,
   starterBought: false,
   promo: newPromoState(),
+  settings: { ...DEFAULT_SETTINGS },
 });
+
+/** Bonus en écrous (ex. récompense multipliée après une pub). */
+export function grantCoins(profile: Profile, coins: number): Profile {
+  return { ...profile, wallet: { ...profile.wallet, coins: profile.wallet.coins + Math.max(0, Math.round(coins)) } };
+}
 
 /** Victoire du niveau `level` : récompense et progression (jamais en arrière). */
 export function completeLevel(profile: Profile, level: number, config: RemoteConfig, multiplier: number): Profile {

@@ -46,13 +46,16 @@ function cuesFor(actions: string[]): { cues: Cue[]; all: Cue[][] } {
   }
   return { cues: all.at(-1) ?? [], all };
 }
-const kinds = (cues: Cue[]) => cues.map((c) => c.kind);
+const kinds = (cues: Cue[]) => cues.map((c) => c.kind).filter((k) => k !== 'sound');
+const sounds = (cues: Cue[]) => cues.flatMap((c) => (c.kind === 'sound' ? [c.sound] : []));
 
 describe('director', () => {
   it('tap → pulse + haptique légère, puis déplacement vers la boîte indiquée par l’événement', () => {
     const { cues } = cuesFor(['r1']);
     expect(kinds(cues)).toEqual(['pulse', 'haptic', 'move']);
-    expect(cues[2]).toMatchObject({ kind: 'move', screwId: 'r1', to: { area: 'box', boxIndex: 0, slot: 0 } });
+    expect(cues.find((c) => c.kind === 'move')).toMatchObject({ screwId: 'r1', to: { area: 'box', boxIndex: 0, slot: 0 } });
+    expect(sounds(cues)).toEqual(['unscrew', 'drop']);
+    expect(cues.find((c) => c.kind === 'sound' && c.sound === 'drop')?.at).toBe(TIMING.move);
   });
 
   it('vis sans boîte → emplacement de toolbox lu dans l’état d’après', () => {
@@ -82,6 +85,7 @@ describe('director', () => {
     expect(end).toMatchObject({ result: 'won', nearMiss: false });
     expect(end!.at).toBe(lastAnim + TIMING.end);
     expect(cues).toContainEqual({ at: end!.at, kind: 'haptic', cue: { type: 'notify', outcome: 'success' } });
+    expect(cues).toContainEqual({ at: end!.at, kind: 'sound', sound: 'win' });
   });
 
   it('les cues sont triées par date', () => {
@@ -97,7 +101,10 @@ describe('director', () => {
     const lost = engine.step(state, { type: 'tap', screwId: 'g2' });
     expect(direct(lost.events, lost.state).find((c) => c.kind === 'end')).toMatchObject({ result: 'lost', nearMiss: false });
     const slot = engine.step(lost.state, { type: 'addToolboxSlot' });
-    expect(direct(slot.events, slot.state)).toEqual([{ at: 0, kind: 'toolboxResize', slots: 2 }]);
+    expect(direct(slot.events, slot.state)).toEqual([
+      { at: 0, kind: 'toolboxResize', slots: 2 },
+      { at: 0, kind: 'sound', sound: 'powerup' },
+    ]);
     const s2 = engine.step(slot.state, { type: 'clearToolbox' });
     expect(direct(s2.events, s2.state)).toContainEqual({ at: 0, kind: 'move', screwId: 'g1', to: { area: 'holding', slot: 0 }, duration: TIMING.move });
   });
@@ -106,6 +113,7 @@ describe('director', () => {
     const s = engine.init(level);
     const blocked = engine.step(s, { type: 'tap', screwId: 'r2' });
     expect(kinds(rejectedTapCues('r2', blocked.events))).toEqual(['shake', 'haptic']);
+    expect(sounds(rejectedTapCues('r2', blocked.events))).toEqual(['blocked']);
     expect(rejectedTapCues('x', engine.step(s, { type: 'tap', screwId: 'x' }).events)).toEqual([]);
   });
 });

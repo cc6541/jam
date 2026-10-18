@@ -2,6 +2,7 @@
 // Pur et sans règle de jeu : tout ce qui est positionnel vient des événements ou de l'état d'après.
 import type { ColorId, GameEvent, GameState, Id } from '@jam/engine-screw';
 import type { HapticCue } from './haptics';
+import type { SoundId } from './sound';
 
 export type Target =
   | { area: 'box'; boxIndex: number; slot: number }
@@ -16,17 +17,20 @@ export type Cue = { at: number } & (
   | { kind: 'boxSwap'; boxIndex: number; next: ColorId | null; duration: number }
   | { kind: 'toolboxResize'; slots: number }
   | { kind: 'haptic'; cue: HapticCue }
+  | { kind: 'sound'; sound: SoundId }
   | { kind: 'end'; result: 'won' | 'lost'; nearMiss: boolean }
 );
 
 export const TIMING = {
-  move: 220,
-  dispatch: 260,
-  stagger: 60,
-  plateDelay: 80,
-  plateFall: 520,
-  boxSwap: 300,
-  end: 150,
+  /** Dévissage (rotation + soulèvement) puis vol en arc. */
+  move: 380,
+  dispatch: 320,
+  stagger: 70,
+  plateDelay: 120,
+  plateFall: 650,
+  /** Couvercle qui se ferme, puis caisse qui s'envole. */
+  boxSwap: 560,
+  end: 300,
 } as const;
 
 /** `after` sert à placer les vis dans la toolbox ou la réserve (leur ordre final). */
@@ -44,11 +48,13 @@ export function direct(events: readonly GameEvent[], after: Pick<GameState, 'too
       case 'screwTapped':
         cues.push({ at: cursor, kind: 'pulse', screwId: e.screwId, tapsLeft: e.tapsLeft });
         cues.push({ at: cursor, kind: 'haptic', cue: { type: 'impact', strength: 'light' } });
+        cues.push({ at: cursor, kind: 'sound', sound: e.tapsLeft > 0 ? 'tap' : 'unscrew' });
         break;
       case 'screwToBox': {
         const fromBoard = e.from === 'board';
         const duration = fromBoard ? TIMING.move : TIMING.dispatch;
         cues.push({ at: cursor, kind: 'move', screwId: e.screwId, to: { area: 'box', boxIndex: e.boxIndex, slot: e.slot }, duration });
+        cues.push({ at: cursor + duration, kind: 'sound', sound: 'drop' });
         run(cursor, duration);
         if (!fromBoard) cursor += TIMING.stagger;
         break;
@@ -56,10 +62,12 @@ export function direct(events: readonly GameEvent[], after: Pick<GameState, 'too
       case 'screwToToolbox': {
         const slot = Math.max(0, after.toolbox.indexOf(e.screwId));
         cues.push({ at: cursor, kind: 'move', screwId: e.screwId, to: { area: 'toolbox', slot }, duration: TIMING.move });
+        cues.push({ at: cursor + TIMING.move, kind: 'sound', sound: 'drop' });
         run(cursor, TIMING.move);
         break;
       }
       case 'toolboxCleared':
+        cues.push({ at: cursor, kind: 'sound', sound: 'powerup' });
         e.screwIds.forEach((screwId, i) => {
           const slot = Math.max(0, after.holding.indexOf(screwId));
           const at = cursor + i * TIMING.stagger;
@@ -71,6 +79,7 @@ export function direct(events: readonly GameEvent[], after: Pick<GameState, 'too
         const at = cursor + TIMING.plateDelay;
         cues.push({ at, kind: 'plateFall', plateId: e.plateId, duration: TIMING.plateFall });
         cues.push({ at, kind: 'haptic', cue: { type: 'impact', strength: 'medium' } });
+        cues.push({ at, kind: 'sound', sound: 'plate' });
         break;
       }
       case 'boxCompleted': {
@@ -78,21 +87,27 @@ export function direct(events: readonly GameEvent[], after: Pick<GameState, 'too
         const at = settled;
         cues.push({ at, kind: 'boxSwap', boxIndex: e.boxIndex, next: e.next, duration: TIMING.boxSwap });
         cues.push({ at, kind: 'haptic', cue: { type: 'impact', strength: 'heavy' } });
+        cues.push({ at, kind: 'sound', sound: 'box' });
         run(at, TIMING.boxSwap);
         cursor = settled;
         break;
       }
       case 'toolboxSlotAdded':
         cues.push({ at: cursor, kind: 'toolboxResize', slots: e.slots });
+        cues.push({ at: cursor, kind: 'sound', sound: 'powerup' });
         break;
       case 'rejected':
-        if (e.reason === 'blocked') cues.push({ at: cursor, kind: 'haptic', cue: { type: 'notify', outcome: 'warning' } });
+        if (e.reason === 'blocked') {
+          cues.push({ at: cursor, kind: 'haptic', cue: { type: 'notify', outcome: 'warning' } });
+          cues.push({ at: cursor, kind: 'sound', sound: 'blocked' });
+        }
         break;
       case 'won':
       case 'lost': {
         const at = settled + TIMING.end;
         const nearMiss = e.type === 'lost' && e.nearMiss;
         cues.push({ at, kind: 'haptic', cue: { type: 'notify', outcome: e.type === 'won' ? 'success' : 'error' } });
+        cues.push({ at, kind: 'sound', sound: e.type === 'won' ? 'win' : 'lose' });
         cues.push({ at, kind: 'end', result: e.type, nearMiss });
         break;
       }

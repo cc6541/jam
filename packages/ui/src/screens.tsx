@@ -1,10 +1,73 @@
 import type { ReactNode } from 'react';
-import { BoosterGlyph, NutIcon, type BoosterIcon } from './icons';
 import type { StringKey } from './i18n';
-import { Button, Modal } from './primitives';
+import { AdIcon, BoosterGlyph, GearIcon, NutIcon, PlusIcon, ProductArt, ScrewArt, type BoosterIcon, type ProductIcon } from './icons';
+import { Button, Modal, Switch } from './primitives';
 import { Swatch, type SwatchDef } from './swatch';
 
 type T = (key: StringKey, vars?: Record<string, string | number>) => string;
+
+const formatNumber = (n: number) => new Intl.NumberFormat().format(n);
+
+// ---------- Jeu ----------
+
+/** Barre du haut : réglages, niveau (et badge « Difficile »), écrous avec accès boutique. */
+export function TopBar({
+  t,
+  level,
+  hard,
+  coins,
+  onSettings,
+  onShop,
+}: {
+  t: T;
+  level: number;
+  hard?: boolean;
+  coins: number;
+  onSettings: () => void;
+  onShop: () => void;
+}) {
+  return (
+    <header className="jam-topbar">
+      <button type="button" className="jam-iconbtn" onClick={onSettings} aria-label={t('settings')}>
+        <GearIcon />
+      </button>
+      <div className="jam-levelpill">
+        <strong>
+          {t('level')} {level}
+        </strong>
+        {hard ? <span className="jam-hard">{t('hard')}</span> : null}
+      </div>
+      <button type="button" className="jam-coins" onClick={onShop} aria-label={`${t('coins')}: ${coins}. ${t('addCoins')}`}>
+        <NutIcon size={24} />
+        <span className="jam-coins__value">{formatNumber(coins)}</span>
+        <span className="jam-coins__plus">
+          <PlusIcon size={14} />
+        </span>
+      </button>
+    </header>
+  );
+}
+
+export function ProgressBar({ label, value }: { label: string; value: number }) {
+  const pct = Math.round(Math.max(0, Math.min(1, value)) * 100);
+  return (
+    <div className="jam-progress" role="progressbar" aria-label={label} aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct}>
+      <div className="jam-progress__fill" style={{ width: `${pct}%` }} />
+    </div>
+  );
+}
+
+/** Bannière d'entrée dans un niveau (l'app la retire après l'animation). */
+export function LevelBanner({ t, level, hard }: { t: T; level: number; hard?: boolean }) {
+  return (
+    <div className="jam-banner" aria-live="polite">
+      <strong>
+        {t('level')} {level}
+      </strong>
+      {hard ? <span>{t('hard')} !</span> : null}
+    </div>
+  );
+}
 
 export interface BoosterButton {
   id: string;
@@ -16,50 +79,7 @@ export interface BoosterButton {
   disabled?: boolean;
 }
 
-export function Hud({
-  t,
-  level,
-  world,
-  coins,
-  onHome,
-}: {
-  t: T;
-  level: number;
-  /** Nom du monde, affiché en néon sous le numéro de niveau. */
-  world?: string;
-  coins: number;
-  onHome: () => void;
-}) {
-  return (
-    <header className="jam-hud">
-      <button type="button" className="jam-hud__home" onClick={onHome} aria-label={t('home')}>
-        ⌂
-      </button>
-      <div className="jam-plate jam-hud__coins" aria-label={`${t('coins')}: ${coins}`}>
-        <NutIcon />
-        <span>
-          {t('coins')} : {coins}
-        </span>
-      </div>
-      <div className="jam-plate jam-hud__level">
-        <strong>
-          {t('level')} {level}
-        </strong>
-        {world ? <span className="jam-neon">{world}</span> : null}
-      </div>
-    </header>
-  );
-}
-
-export function BoosterBar({
-  t,
-  boosters,
-  onBooster,
-}: {
-  t: T;
-  boosters: BoosterButton[];
-  onBooster: (id: string) => void;
-}) {
+export function BoosterBar({ t, boosters, onBooster }: { t: T; boosters: BoosterButton[]; onBooster: (id: string) => void }) {
   return (
     <nav className="jam-boosters" aria-label="Boosters">
       {boosters.map((b) => (
@@ -71,18 +91,16 @@ export function BoosterBar({
           onClick={() => onBooster(b.id)}
           aria-label={`${b.label} (${b.owned > 0 ? `×${b.owned}` : `${b.price} ${t('coins')}`})`}
         >
-          <span className="jam-booster__tile">
+          <span className="jam-booster__disc">
             <BoosterGlyph icon={b.icon} />
-            <span className="jam-booster__badge">
-              {b.owned > 0 ? (
-                `×${b.owned}`
-              ) : (
-                <>
-                  <NutIcon size={12} />
-                  {b.price}
-                </>
-              )}
-            </span>
+            {b.owned > 0 ? (
+              <span className="jam-booster__count">{b.owned}</span>
+            ) : (
+              <span className="jam-booster__price">
+                <NutIcon size={13} />
+                {b.price}
+              </span>
+            )}
           </span>
           <span className="jam-booster__label">{b.label}</span>
         </button>
@@ -91,58 +109,98 @@ export function BoosterBar({
   );
 }
 
+// ---------- Accueil ----------
+
 export function HomeScreen({
   t,
   title,
   nextLevel,
+  nextHard,
   coins,
   swatches,
   onPlay,
   onShop,
+  onSettings,
   footer,
 }: {
   t: T;
   title: string;
   nextLevel: number;
+  nextHard?: boolean;
   coins: number;
   swatches: SwatchDef[];
   onPlay: () => void;
   onShop: () => void;
+  onSettings: () => void;
   footer?: ReactNode;
 }) {
+  const words = title.split(' ');
+  const last = words.pop() ?? title;
   return (
     <main className="jam-home">
-      <h1 className="jam-home__title">{title}</h1>
-      <p className="jam-home__coins">
-        <NutIcon size={20} /> {coins} {t('coins')}
-      </p>
-      <div className="jam-home__actions">
-        <Button onClick={onPlay}>
-          {t('play')} · {t('level')} {nextLevel}
+      <div className="jam-home__top">
+        <button type="button" className="jam-iconbtn" onClick={onSettings} aria-label={t('settings')}>
+          <GearIcon />
+        </button>
+        <button type="button" className="jam-coins" onClick={onShop} aria-label={`${t('coins')}: ${coins}. ${t('addCoins')}`}>
+          <NutIcon size={24} />
+          <span className="jam-coins__value">{formatNumber(coins)}</span>
+          <span className="jam-coins__plus">
+            <PlusIcon size={14} />
+          </span>
+        </button>
+      </div>
+
+      <h1 className="jam-logo">
+        <span className="jam-logo__art">
+          <ScrewArt color="#f0444b" size={54} />
+          <ScrewArt color="#ffc928" size={70} />
+          <ScrewArt color="#2fbf63" size={54} />
+        </span>
+        {words.length > 0 ? <span className="jam-logo__word">{words.join(' ')}</span> : null}
+        <span className="jam-logo__word jam-logo__word--accent">{last}</span>
+      </h1>
+
+      <div className="jam-home__cta">
+        <Button size="lg" onClick={onPlay}>
+          <span className="jam-cta__label">
+            {t('level')} {nextLevel}
+          </span>
+          {nextHard ? <span className="jam-hard jam-hard--inline">{t('hard')}</span> : null}
         </Button>
         <Button variant="secondary" onClick={onShop}>
           {t('shop')}
         </Button>
       </div>
-      <p className="jam-home__howto">{t('howTo')}</p>
-      <ul className="jam-legend" aria-label="Couleurs et motifs">
-        {swatches.map((s) => (
-          <li key={s.id}>
-            <Swatch swatch={s} size={32} />
-            <span>{s.label}</span>
-          </li>
-        ))}
-      </ul>
+
+      <section className="jam-card jam-howto">
+        <p>{t('howTo')}</p>
+        <ul className="jam-legend" aria-label={t('patterns')}>
+          {swatches.map((s) => (
+            <li key={s.id}>
+              <Swatch swatch={s} size={30} />
+              <span>{s.label}</span>
+            </li>
+          ))}
+        </ul>
+      </section>
       {footer}
     </main>
   );
 }
+
+// ---------- Modales ----------
 
 export interface ShopProduct {
   id: string;
   title: string;
   detail?: string;
   displayPrice: string;
+  icon: ProductIcon;
+  /** Taille du tas d'écrous (1 à 4) pour les packs. */
+  tier?: number;
+  /** Mis en avant sur toute la largeur. */
+  featured?: boolean;
   /** Non consommable déjà acheté. */
   owned?: boolean;
   badge?: string;
@@ -164,28 +222,26 @@ export function ShopModal({
   onClose: () => void;
 }) {
   return (
-    <Modal title={t('shop')} onClose={onClose}>
+    <Modal title={t('shop')} tone="blue" onClose={onClose} closeLabel={t('close')}>
       {mock ? <p className="jam-note">{t('mockBadge')}</p> : null}
       <ul className="jam-shop">
         {products.map((p) => (
-          <li key={p.id} className="jam-shop__item">
-            <div>
+          <li key={p.id} className={`jam-shop__item${p.featured ? ' jam-shop__item--wide' : ''}`}>
+            {p.badge ? <span className="jam-badge">{p.badge}</span> : null}
+            <ProductArt icon={p.icon} {...(p.tier ? { tier: p.tier } : {})} />
+            <div className="jam-shop__text">
               <strong>{p.title}</strong>
-              {p.badge ? <span className="jam-badge">{p.badge}</span> : null}
               {p.detail ? <small>{p.detail}</small> : null}
             </div>
-            <Button onClick={() => onBuy(p.id)} disabled={p.owned === true}>
+            <Button size="sm" variant={p.featured ? 'primary' : 'secondary'} onClick={() => onBuy(p.id)} disabled={p.owned === true}>
               {p.owned ? t('owned') : p.displayPrice}
             </Button>
           </li>
         ))}
       </ul>
       <div className="jam-modal__actions">
-        <Button variant="secondary" onClick={onRestore}>
+        <Button variant="ghost" onClick={onRestore}>
           {t('restore')}
-        </Button>
-        <Button variant="secondary" onClick={onClose}>
-          {t('close')}
         </Button>
       </div>
     </Modal>
@@ -217,8 +273,13 @@ export function NearMissModal({
   onGiveUp: () => void;
 }) {
   return (
-    <Modal title={t('nearMissTitle')}>
-      <p>{t('nearMissBody', { n: remaining })}</p>
+    <Modal title={t('nearMissTitle')} tone="gold">
+      <div className="jam-hero">
+        <span className="jam-hero__slot" aria-hidden="true">
+          <BoosterGlyph icon="slot" size={44} />
+        </span>
+      </div>
+      <p className="jam-lead">{t('nearMissBody', { n: remaining })}</p>
       <div
         className="jam-timer"
         role="progressbar"
@@ -229,15 +290,14 @@ export function NearMissModal({
       >
         <div className="jam-timer__bar" style={{ width: `${Math.max(0, Math.min(1, secondsLeft / offerSeconds)) * 100}%` }} />
       </div>
-      <p className="jam-note">{t('nearMissTimeLeft', { n: Math.ceil(secondsLeft) })}</p>
       <div className="jam-modal__actions jam-modal__actions--stack">
         <Button onClick={onWatchAd} disabled={!adReady}>
-          {t('nearMissAd')}
+          <AdIcon /> {t('nearMissAd')}
         </Button>
         <Button variant="secondary" onClick={onPay} disabled={!canPay}>
-          {t('nearMissCoins', { n: continueCost })}
+          <NutIcon size={22} /> {continueCost}
         </Button>
-        <Button variant="secondary" onClick={onGiveUp}>
+        <Button variant="ghost" onClick={onGiveUp}>
           {t('nearMissGiveUp')}
         </Button>
       </div>
@@ -245,37 +305,92 @@ export function NearMissModal({
   );
 }
 
-export function EndModal({
+export function WinModal({
   t,
-  result,
   reward,
-  onNext,
-  onRetry,
-  onHome,
+  multiplier = 3,
+  adReady,
+  onMultiply,
+  onContinue,
 }: {
   t: T;
-  result: 'won' | 'lost';
-  reward?: number;
-  onNext: () => void;
-  onRetry: () => void;
-  onHome: () => void;
+  reward: number;
+  multiplier?: number;
+  adReady: boolean;
+  onMultiply: () => void;
+  onContinue: () => void;
 }) {
   return (
-    <Modal title={result === 'won' ? t('victory') : t('defeat')}>
-      {result === 'won' && reward ? (
-        <p className="jam-reward">
-          {t('reward')} : <NutIcon size={20} /> {reward}
-        </p>
-      ) : null}
+    <Modal title={t('levelComplete')} tone="green">
+      <div className="jam-reward">
+        <NutIcon size={46} />
+        <span>+{reward}</span>
+      </div>
       <div className="jam-modal__actions jam-modal__actions--stack">
-        {result === 'won' ? <Button onClick={onNext}>{t('next')}</Button> : null}
-        <Button variant={result === 'won' ? 'secondary' : 'primary'} onClick={onRetry}>
-          {t('retry')}
-        </Button>
-        <Button variant="secondary" onClick={onHome}>
+        {adReady ? (
+          <Button variant="gold" onClick={onMultiply}>
+            <AdIcon /> {t('triple')} · +{reward * multiplier}
+          </Button>
+        ) : null}
+        <Button onClick={onContinue}>{t('continue')}</Button>
+      </div>
+    </Modal>
+  );
+}
+
+export function LoseModal({ t, onRetry, onHome }: { t: T; onRetry: () => void; onHome: () => void }) {
+  return (
+    <Modal title={t('defeat')} tone="red">
+      <p className="jam-lead">{t('defeatBody')}</p>
+      <div className="jam-modal__actions jam-modal__actions--stack">
+        <Button onClick={onRetry}>{t('retry')}</Button>
+        <Button variant="ghost" onClick={onHome}>
           {t('home')}
         </Button>
       </div>
+    </Modal>
+  );
+}
+
+export function SettingsModal({
+  t,
+  sound,
+  haptics,
+  onSound,
+  onHaptics,
+  onRestore,
+  onHome,
+  onClose,
+  footer,
+}: {
+  t: T;
+  sound: boolean;
+  haptics: boolean;
+  onSound: (value: boolean) => void;
+  onHaptics: (value: boolean) => void;
+  onRestore: () => void;
+  /** Absent sur l'accueil. */
+  onHome?: () => void;
+  onClose: () => void;
+  footer?: ReactNode;
+}) {
+  return (
+    <Modal title={t('settings')} tone="blue" onClose={onClose} closeLabel={t('close')}>
+      <div className="jam-settings">
+        <Switch label={t('sound')} checked={sound} onChange={onSound} />
+        <Switch label={t('haptics')} checked={haptics} onChange={onHaptics} />
+      </div>
+      <div className="jam-modal__actions jam-modal__actions--stack">
+        {onHome ? (
+          <Button variant="secondary" onClick={onHome}>
+            {t('home')}
+          </Button>
+        ) : null}
+        <Button variant="ghost" onClick={onRestore}>
+          {t('restore')}
+        </Button>
+      </div>
+      {footer}
     </Modal>
   );
 }
@@ -294,12 +409,12 @@ export function CrossPromoModal({
   onClose: () => void;
 }) {
   return (
-    <Modal title={t('promoTitle')} onClose={onClose}>
+    <Modal title={t('promoTitle')} tone="blue" onClose={onClose} closeLabel={t('close')}>
       <p className="jam-promo__name">{name}</p>
-      <p>{tagline}</p>
-      <div className="jam-modal__actions">
+      <p className="jam-lead">{tagline}</p>
+      <div className="jam-modal__actions jam-modal__actions--stack">
         <Button onClick={onInstall}>{t('promoInstall')}</Button>
-        <Button variant="secondary" onClick={onClose}>
+        <Button variant="ghost" onClick={onClose}>
           {t('promoLater')}
         </Button>
       </div>

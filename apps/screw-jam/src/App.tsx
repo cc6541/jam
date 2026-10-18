@@ -1,17 +1,21 @@
 import { storeLink, localized, pickPromo, recordShown, type PromoApp } from '@jam/cross-promo';
 import type { Id } from '@jam/engine-screw';
-import { BoardView, DEFAULT_THEME as PIXI_THEME, vibrateHaptics } from '@jam/render-pixi';
+import { BoardView, DEFAULT_THEME as PIXI_THEME, vibrateHaptics, type HapticsPort } from '@jam/render-pixi';
 import { coinMultiplier, shouldShowInterstitial, spend, useBooster, type BoosterId } from '@jam/shell';
 import {
+  BoosterBar,
   CrossPromoModal,
   DEFAULT_UI_THEME,
-  EndModal,
   HomeScreen,
-  BoosterBar,
-  Hud,
+  LevelBanner,
+  LoseModal,
   NearMissModal,
+  ProgressBar,
+  SettingsModal,
   ShopModal,
   themeStyle,
+  TopBar,
+  WinModal,
   type BoosterButton,
   type ShopProduct,
   type SwatchDef,
@@ -20,19 +24,27 @@ import { Application } from 'pixi.js';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import appConfig from '../app.config.json';
 import { boosterNames, colorNames, productCopy } from './copy';
+import { isHardLevel } from './difficulty';
 import { GameSession } from './game-session';
-import { grantPurchase, isAvailable, isOwned, completeLevel, type Profile } from './profile';
+import { completeLevel, grantCoins, grantPurchase, isAvailable, isOwned, withDefaults, type Profile, type Settings } from './profile';
 import { PRODUCTS, mockPrice, type ProductId } from './products';
 import type { Services } from './services';
+import { SynthSounds } from './sfx';
 
 type Modal =
   | { kind: 'shop' }
+  | { kind: 'settings' }
   | { kind: 'nearMiss'; remaining: number; offerSeconds: number; deadline: number }
-  | { kind: 'end'; result: 'won' | 'lost'; reward?: number }
+  | { kind: 'win'; reward: number }
+  | { kind: 'lose' }
   | { kind: 'promo'; app: PromoApp };
 
 const BOOSTERS: BoosterId[] = ['undo', 'addToolboxSlot', 'clearToolbox'];
+const BANNER_MS = 1600;
+/** Laisse les confettis vivre un instant avant d'ouvrir la modale de victoire. */
+const WIN_DELAY_MS = 650;
 const hex = (n: number) => `#${n.toString(16).padStart(6, '0')}`;
+const NUT_PACKS: ProductId[] = ['coins_s', 'coins_m', 'coins_l', 'coins_xl'];
 
 export function App({ s }: { s: Services }) {
   const { t, config, locale } = s;
@@ -44,12 +56,18 @@ export function App({ s }: { s: Services }) {
   const [screen, setScreen] = useState<'home' | 'play'>(params.get('play') !== null ? 'play' : 'home');
   const [modal, setModalState] = useState<Modal | null>(null);
   const modalRef = useRef<Modal | null>(null);
+  const [banner, setBanner] = useState<{ level: number; key: number } | null>(null);
   const [, setTick] = useState(0);
   const boardEl = useRef<HTMLDivElement>(null);
   const session = useRef<GameSession | null>(null);
   const startRef = useRef<((level: number) => void) | null>(null);
   const currentLevel = useRef(1);
   const continuation = useRef<(() => void) | null>(null);
+  const sounds = useMemo(() => new SynthSounds(), []);
+  const haptics = useMemo<HapticsPort>(
+    () => ({ play: (cue) => (profileRef.current?.settings.haptics === false ? undefined : vibrateHaptics.play(cue)) }),
+    [],
+  );
 
   const setModal = useCallback((m: Modal | null) => {
     modalRef.current = m;
@@ -63,25 +81,28 @@ export function App({ s }: { s: Services }) {
       if (!current) return;
       const next = change(current);
       profileRef.current = next;
+      sounds.enabled = next.settings.sound;
       setProfileState(next);
       void s.profileDoc.save(next);
     },
-    [s.profileDoc],
+    [s.profileDoc, sounds],
   );
 
-  // Chargement de la sauvegarde ; aperçus de développement via ?show=shop|promo|end|nearmiss.
+  // Chargement de la sauvegarde ; aperçus de développement via ?show=shop|settings|win|lose|nearmiss|promo.
   useEffect(() => {
-    void s.profileDoc.load().then((p) => {
+    void s.profileDoc.load().then((raw) => {
+      const p = withDefaults(raw);
       const start = params.get('level');
       const loaded = start ? { ...p, nextLevel: Number(start) } : p;
       profileRef.current = loaded;
       currentLevel.current = loaded.nextLevel;
+      sounds.enabled = loaded.settings.sound;
       setProfileState(loaded);
       if (show === 'shop') setModal({ kind: 'shop' });
-      if (show === 'end') setModal({ kind: 'end', result: 'won', reward: config.economy.levelReward });
-      if (show === 'nearmiss') {
-        setModal({ kind: 'nearMiss', remaining: 2, offerSeconds: 10, deadline: s.clock.now() + 10_000 });
-      }
+      if (show === 'settings') setModal({ kind: 'settings' });
+      if (show === 'win') setModal({ kind: 'win', reward: config.economy.levelReward });
+      if (show === 'lose') setModal({ kind: 'lose' });
+      if (show === 'nearmiss') setModal({ kind: 'nearMiss', remaining: 2, offerSeconds: 10, deadline: s.clock.now() + 10_000 });
       if (show === 'promo') {
         setModal({
           kind: 'promo',
@@ -92,7 +113,7 @@ export function App({ s }: { s: Services }) {
     const flush = () => void s.clock.flush();
     document.addEventListener('visibilitychange', flush);
     return () => document.removeEventListener('visibilitychange', flush);
-  }, [s, params, show, config.economy.levelReward, setModal]);
+  }, [s, params, show, config.economy.levelReward, setModal, sounds]);
 
   // ---------- Fin de partie ----------
 
@@ -103,17 +124,13 @@ export function App({ s }: { s: Services }) {
       if (result === 'won') {
         const multiplier = coinMultiplier(config, s.clock.now());
         updateProfile((p) => completeLevel(p, currentLevel.current, config, multiplier));
-        setModal({ kind: 'end', result, reward: Math.round(config.economy.levelReward * multiplier) });
+        const reward = Math.round(config.economy.levelReward * multiplier);
+        setTimeout(() => setModal({ kind: 'win', reward }), WIN_DELAY_MS);
       } else if (nearMiss) {
         const { offerSeconds } = sess.level.rules.nearMiss;
-        setModal({
-          kind: 'nearMiss',
-          remaining: Object.keys(sess.state.screws).length,
-          offerSeconds,
-          deadline: s.clock.now() + offerSeconds * 1000,
-        });
+        setModal({ kind: 'nearMiss', remaining: Object.keys(sess.state.screws).length, offerSeconds, deadline: s.clock.now() + offerSeconds * 1000 });
       } else {
-        setModal({ kind: 'end', result });
+        setModal({ kind: 'lose' });
       }
       bump();
     },
@@ -130,6 +147,8 @@ export function App({ s }: { s: Services }) {
     let view: BoardView | null = null;
 
     void (async () => {
+      // La police des badges doit être prête avant de dessiner du texte dans le canvas.
+      await document.fonts?.load(`700 16px Fredoka`).catch(() => undefined);
       const a = new Application();
       await a.init({ resizeTo: host, backgroundAlpha: 0, antialias: false, autoDensity: true, resolution: Math.min(2, devicePixelRatio) });
       if (cancelled) {
@@ -145,8 +164,8 @@ export function App({ s }: { s: Services }) {
           bump();
         },
         onEnd,
-        haptics: vibrateHaptics,
-        labels: { toolbox: t('toolbox') },
+        haptics,
+        sounds,
       });
       view = board;
       a.stage.addChild(board.root);
@@ -161,6 +180,7 @@ export function App({ s }: { s: Services }) {
         currentLevel.current = n;
         session.current = new GameSession(level, board, () => ({ width: a.screen.width, height: a.screen.height }));
         setModal(null);
+        setBanner({ level: n, key: Date.now() });
         bump();
       };
       startRef.current(currentLevel.current);
@@ -175,6 +195,12 @@ export function App({ s }: { s: Services }) {
     };
     // Le plateau ne se recrée que lorsqu'on entre/sort de l'écran de jeu (dépendances volontairement réduites).
   }, [screen, profile === null]);
+
+  useEffect(() => {
+    if (!banner) return;
+    const id = setTimeout(() => setBanner(null), BANNER_MS);
+    return () => clearTimeout(id);
+  }, [banner]);
 
   // ---------- Actions ----------
 
@@ -228,6 +254,7 @@ export function App({ s }: { s: Services }) {
   const nextLevel = async () => {
     const current = profileRef.current;
     if (!current) return;
+    setModal(null);
     const finished = current.nextLevel - 1;
     if (shouldShowInterstitial(finished, config.ads, current.noAds)) await s.ads.showInterstitial('level_end');
     const app = pickPromo(s.promoConfig, current.promo, {
@@ -247,6 +274,12 @@ export function App({ s }: { s: Services }) {
     }
   };
 
+  const multiplyReward = async (reward: number) => {
+    const result = await s.ads.showRewarded('win_x3');
+    if (result.status === 'rewarded') updateProfile((p) => grantCoins(p, reward * 2));
+    void nextLevel();
+  };
+
   const closePromo = () => {
     const next = continuation.current;
     continuation.current = null;
@@ -263,6 +296,8 @@ export function App({ s }: { s: Services }) {
     for (const id of await s.iap.restore()) updateProfile((p) => grantPurchase(p, id as ProductId));
   };
 
+  const setSetting = (key: keyof Settings, value: boolean) => updateProfile((p) => ({ ...p, settings: { ...p.settings, [key]: value } }));
+
   // ---------- Rendu ----------
 
   const theme = { ...DEFAULT_UI_THEME, ...appConfig.theme.ui };
@@ -276,10 +311,16 @@ export function App({ s }: { s: Services }) {
   if (!profile) return <div className="jam-root" style={themeStyle(theme)} />;
 
   const sess = session.current;
+  const level = currentLevel.current;
+  const progress = sess ? 1 - Object.keys(sess.state.screws).length / Math.max(1, sess.level.screws.length) : 0;
   const boosters: BoosterButton[] = BOOSTERS.map((id) => {
     const playing = sess?.state.status === 'playing';
     const usable =
-      id === 'undo' ? sess?.canUndo === true : id === 'addToolboxSlot' ? (sess?.state.toolboxSlots ?? 0) < (sess?.level.rules.toolboxMaxSlots ?? 0) : (sess?.state.toolbox.length ?? 0) > 0;
+      id === 'undo'
+        ? sess?.canUndo === true
+        : id === 'addToolboxSlot'
+          ? (sess?.state.toolboxSlots ?? 0) < (sess?.level.rules.toolboxMaxSlots ?? 0)
+          : (sess?.state.toolbox.length ?? 0) > 0;
     return {
       id,
       label: boosterNames[locale][id],
@@ -293,15 +334,21 @@ export function App({ s }: { s: Services }) {
   const products: ShopProduct[] = PRODUCTS.filter((p) => isAvailable(profile, p.id)).map((p) => {
     const copy = productCopy[locale][p.id];
     const detail = p.id === 'piggy' ? `${profile.wallet.piggy} ${t('coins').toLowerCase()}` : copy.detail;
+    const pack = NUT_PACKS.indexOf(p.id);
     return {
       id: p.id,
       title: copy.title,
       displayPrice: mockPrice(p.tier, locale),
       owned: isOwned(profile, p.id),
+      icon: pack >= 0 ? 'nuts' : p.id === 'noads' ? 'noads' : p.id === 'starter' ? 'starter' : 'piggy',
+      featured: pack < 0,
+      ...(pack >= 0 ? { tier: pack + 1 } : {}),
       ...(detail ? { detail } : {}),
       ...(copy.badge ? { badge: copy.badge } : {}),
     };
   });
+
+  const settingsFooter = s.mock ? <p className="jam-note">{t('mockBadge')}</p> : null;
 
   return (
     <div className="jam-root" style={themeStyle(theme)}>
@@ -310,22 +357,46 @@ export function App({ s }: { s: Services }) {
           t={t}
           title={appConfig.displayName}
           nextLevel={profile.nextLevel}
+          nextHard={isHardLevel(profile.nextLevel)}
           coins={profile.wallet.coins}
           swatches={swatches}
           onPlay={() => play(profile.nextLevel)}
           onShop={() => setModal({ kind: 'shop' })}
+          onSettings={() => setModal({ kind: 'settings' })}
           footer={s.mock ? <p className="jam-note">{t('mockBadge')}</p> : null}
         />
       ) : (
         <div className="jam-play">
-          <Hud t={t} level={currentLevel.current} world={appConfig.world[locale]} coins={profile.wallet.coins} onHome={goHome} />
+          <TopBar
+            t={t}
+            level={level}
+            hard={isHardLevel(level)}
+            coins={profile.wallet.coins}
+            onSettings={() => setModal({ kind: 'settings' })}
+            onShop={() => setModal({ kind: 'shop' })}
+          />
+          <ProgressBar label={t('progress')} value={progress} />
           <div ref={boardEl} className="jam-board" />
           <BoosterBar t={t} boosters={boosters} onBooster={(id) => useBoosterButton(id as BoosterId)} />
+          {banner ? <LevelBanner key={banner.key} t={t} level={banner.level} hard={isHardLevel(banner.level)} /> : null}
         </div>
       )}
 
       {modal?.kind === 'shop' ? (
         <ShopModal t={t} products={products} mock={s.mock} onBuy={(id) => void buy(id)} onRestore={() => void restore()} onClose={() => setModal(null)} />
+      ) : null}
+      {modal?.kind === 'settings' ? (
+        <SettingsModal
+          t={t}
+          sound={profile.settings.sound}
+          haptics={profile.settings.haptics}
+          onSound={(v) => setSetting('sound', v)}
+          onHaptics={(v) => setSetting('haptics', v)}
+          onRestore={() => void restore()}
+          {...(screen === 'play' ? { onHome: goHome } : {})}
+          onClose={() => setModal(null)}
+          footer={settingsFooter}
+        />
       ) : null}
       {modal?.kind === 'nearMiss' ? (
         <NearMissHost
@@ -337,19 +408,19 @@ export function App({ s }: { s: Services }) {
           adReady={s.ads.isRewardedReady('near_miss')}
           onWatchAd={() => void watchAd()}
           onPay={payToContinue}
-          onGiveUp={() => setModal({ kind: 'end', result: 'lost' })}
+          onGiveUp={() => setModal({ kind: 'lose' })}
         />
       ) : null}
-      {modal?.kind === 'end' ? (
-        <EndModal
+      {modal?.kind === 'win' ? (
+        <WinModal
           t={t}
-          result={modal.result}
-          {...(modal.reward !== undefined ? { reward: modal.reward } : {})}
-          onNext={() => void nextLevel()}
-          onRetry={() => play(currentLevel.current)}
-          onHome={goHome}
+          reward={modal.reward}
+          adReady={s.ads.isRewardedReady('win_x3')}
+          onMultiply={() => void multiplyReward(modal.reward)}
+          onContinue={() => void nextLevel()}
         />
       ) : null}
+      {modal?.kind === 'lose' ? <LoseModal t={t} onRetry={() => play(currentLevel.current)} onHome={goHome} /> : null}
       {modal?.kind === 'promo' ? (
         <CrossPromoModal
           t={t}

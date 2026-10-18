@@ -5,6 +5,7 @@ export type Easing = (t: number) => number;
 export const easings = {
   linear: (t: number) => t,
   outCubic: (t: number) => 1 - (1 - t) ** 3,
+  inOutCubic: (t: number) => (t < 0.5 ? 4 * t ** 3 : 1 - (-2 * t + 2) ** 3 / 2),
   inQuad: (t: number) => t * t,
   outBack: (t: number) => 1 + 2.70158 * (t - 1) ** 3 + 1.70158 * (t - 1) ** 2,
 } satisfies Record<string, Easing>;
@@ -44,12 +45,25 @@ export class TweenRunner {
       if (local < 0) continue;
       tw.started = true;
       const t = tw.duration <= 0 ? 1 : Math.min(1, local / tw.duration);
-      tw.update(tw.easing(t));
+      try {
+        tw.update(tw.easing(t));
+      } catch (error) {
+        // Une animation qui échoue est abandonnée : elle ne doit jamais bloquer le jeu.
+        console.error(error);
+        done.push(tw);
+        continue;
+      }
       if (t >= 1) done.push(tw);
     }
     if (done.length === 0) return;
     this.running = this.running.filter((tw) => !done.includes(tw));
-    for (const tw of done) tw.onComplete?.();
+    for (const tw of done) {
+      try {
+        tw.onComplete?.();
+      } catch (error) {
+        console.error(error);
+      }
+    }
   }
 
   /** Termine tout immédiatement (ex. : coup suivant joué pendant l'animation). */

@@ -1,109 +1,201 @@
-/* Habillage « atelier » : panneaux métal vissés, néon, boutons en relief. Toutes les couleurs d'app passent par les variables --jam-*. */
-.jam-root { position: fixed; inset: 0; background: var(--jam-bg); color: var(--jam-text); font-weight: 700; -webkit-tap-highlight-color: transparent; }
+/* Interface du jeu : clair, lisible, en relief. Toutes les couleurs d'app passent par les variables --jam-*. */
+.jam-root {
+  position: fixed; inset: 0; overflow: hidden; color: var(--jam-text); font-weight: 600;
+  -webkit-tap-highlight-color: transparent; -webkit-user-select: none; user-select: none;
+  background:
+    radial-gradient(circle at 1px 1px, #ffffff24 1.4px, transparent 0) 0 0 / 22px 22px,
+    radial-gradient(120% 55% at 50% 0%, #ffffff40 0%, transparent 60%),
+    linear-gradient(180deg, var(--jam-bg-top) 0%, var(--jam-bg-bottom) 100%);
+}
 .jam-root *, .jam-root *::before, .jam-root *::after { box-sizing: border-box; }
-.jam-icon { flex: none; filter: drop-shadow(0 1px 0 #0006); }
+.jam-icon { flex: none; display: block; }
+.jam-art { flex: none; display: block; }
 
-/* Plaque de métal avec deux rivets */
-.jam-plate {
-  position: relative; display: flex; align-items: center; gap: 8px; padding: 7px 20px; border-radius: 12px;
-  color: #fff; font-weight: 800; text-shadow: 0 2px 0 #0009;
-  background: linear-gradient(180deg, #7d8799 0%, #5f6a7b 48%, #465060 100%);
-  border: 2px solid var(--jam-panel-edge);
-  box-shadow: inset 0 2px 0 #ffffff66, inset 0 -3px 0 #0003, 0 4px 10px #0007;
-}
-.jam-plate::before, .jam-plate::after {
-  content: ""; position: absolute; top: 50%; width: 7px; height: 7px; margin-top: -3.5px; border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #fff, #98a2b3 55%, #4a5260); box-shadow: 0 1px 0 #0006;
-}
-.jam-plate::before { left: 6px; }
-.jam-plate::after { right: 6px; }
-
-/* Boutons en relief */
+/* ---------- Boutons en relief ---------- */
 .jam-btn {
-  min-height: 48px; min-width: 48px; padding: 10px 20px; border-radius: var(--jam-radius); font: inherit; font-weight: 800; cursor: pointer;
-  text-shadow: 0 2px 0 #0008; transition: transform .06s;
+  --edge: #0003;
+  position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 52px; padding: 12px 22px 15px; border: 0; border-radius: 16px; cursor: pointer;
+  font: inherit; font-size: 1.08rem; font-weight: 700; color: #fff; text-shadow: 0 2px 0 #0b1a3333;
+  box-shadow: inset 0 -5px 0 var(--edge), 0 5px 12px #0b1a3333;
+  transition: transform .08s ease, box-shadow .08s ease, filter .15s;
 }
-.jam-btn:active:not(:disabled) { transform: translateY(2px); }
-.jam-btn--primary {
-  color: var(--jam-on-primary);
-  background: linear-gradient(180deg, color-mix(in srgb, var(--jam-primary) 62%, white) 0%, var(--jam-primary) 52%, color-mix(in srgb, var(--jam-primary) 72%, black) 100%);
-  border: 2px solid color-mix(in srgb, var(--jam-primary) 40%, black);
-  box-shadow: inset 0 2px 0 #ffffff77, 0 3px 0 color-mix(in srgb, var(--jam-primary) 45%, black), 0 7px 12px #0006;
+.jam-btn::after {
+  content: ""; position: absolute; left: 10px; right: 10px; top: 5px; height: 32%; border-radius: 10px;
+  background: linear-gradient(#ffffff66, #ffffff00); pointer-events: none;
 }
-.jam-btn--secondary {
-  color: var(--jam-text);
-  background: linear-gradient(180deg, #7d8799 0%, #5f6a7b 50%, #465060 100%);
-  border: 2px solid var(--jam-panel-edge);
-  box-shadow: inset 0 2px 0 #ffffff55, 0 3px 0 #1d222c, 0 7px 12px #0006;
+.jam-btn:active:not(:disabled) { transform: translateY(3px); box-shadow: inset 0 -2px 0 var(--edge), 0 2px 6px #0b1a3333; }
+.jam-btn--primary { background: var(--jam-primary); --edge: var(--jam-primary-dark); }
+.jam-btn--secondary { background: var(--jam-secondary); --edge: var(--jam-secondary-dark); }
+.jam-btn--gold { background: var(--jam-accent); --edge: #c48f00; color: #5a3a00; text-shadow: 0 1px 0 #ffffff80; }
+.jam-btn--danger { background: var(--jam-danger); --edge: #a8232a; }
+.jam-btn--ghost { background: transparent; color: var(--jam-muted); box-shadow: none; text-shadow: none; min-height: 44px; padding: 8px 16px; }
+.jam-btn--ghost::after { display: none; }
+.jam-btn--lg { min-height: 66px; font-size: 1.45rem; border-radius: 22px; padding: 14px 28px 19px; }
+.jam-btn--sm { min-height: 42px; font-size: .95rem; padding: 8px 14px 11px; border-radius: 13px; }
+.jam-btn:disabled { filter: grayscale(.8) brightness(1.05); opacity: .55; cursor: not-allowed; }
+.jam-btn:focus-visible, .jam-iconbtn:focus-visible, .jam-coins:focus-visible, .jam-booster:focus-visible, .jam-close:focus-visible, .jam-switch:focus-visible {
+  outline: 3px solid #fff; outline-offset: 3px; box-shadow: 0 0 0 6px var(--jam-secondary-dark);
 }
-.jam-btn--danger { color: #fff; background: linear-gradient(180deg, #ff7478, var(--jam-danger) 55%, #a52a2e); border: 2px solid #5a1416; box-shadow: inset 0 2px 0 #ffffff66, 0 3px 0 #5a1416, 0 7px 12px #0006; }
-.jam-btn:disabled { opacity: .45; cursor: not-allowed; }
-.jam-btn:focus-visible, .jam-booster:focus-visible, .jam-hud__home:focus-visible { outline: 3px solid var(--jam-accent); outline-offset: 2px; }
 
-/* Modales : plaque d'acier sombre */
-.jam-backdrop { position: absolute; inset: 0; display: grid; place-items: center; padding: 16px; background: #000b; z-index: 20; }
+/* ---------- Pastilles du haut ---------- */
+.jam-iconbtn {
+  flex: none; display: grid; place-items: center; width: 46px; height: 46px; border: 0; border-radius: 15px; cursor: pointer;
+  background: #ffffffee; color: var(--jam-secondary-dark);
+  box-shadow: inset 0 -4px 0 #c9d9ee, 0 4px 10px #0b1a3326;
+}
+.jam-coins {
+  display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 4px 0 6px; border: 0; border-radius: 999px; cursor: pointer;
+  background: #0b1a3359; color: #fff; font: inherit; font-weight: 700; font-size: 1.05rem; font-variant-numeric: tabular-nums;
+  box-shadow: inset 0 2px 4px #0b1a3333;
+}
+.jam-coins__value { min-width: 3ch; text-align: right; padding-right: 2px; }
+.jam-coins__plus {
+  display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; color: #fff;
+  background: var(--jam-primary); box-shadow: inset 0 -3px 0 var(--jam-primary-dark);
+}
+.jam-hard {
+  display: inline-block; padding: 2px 10px; border-radius: 999px; background: var(--jam-danger); color: #fff;
+  font-size: .72rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; box-shadow: inset 0 -2px 0 #0002;
+}
+.jam-hard--inline { margin-left: 8px; font-size: .78rem; vertical-align: middle; }
+
+/* ---------- Jeu ---------- */
+.jam-play { position: absolute; inset: 0; display: flex; flex-direction: column; padding-top: env(safe-area-inset-top, 0px); }
+.jam-topbar { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; padding: 10px 12px 4px; }
+.jam-topbar > .jam-iconbtn { justify-self: start; }
+.jam-topbar > .jam-coins { justify-self: end; }
+.jam-levelpill {
+  display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 20px 8px; border-radius: 16px;
+  background: #ffffffee; color: var(--jam-text); box-shadow: inset 0 -4px 0 #c9d9ee, 0 4px 10px #0b1a3326;
+}
+.jam-levelpill strong { font-size: 1.2rem; font-weight: 700; line-height: 1.1; white-space: nowrap; }
+.jam-progress { margin: 8px 24px 0; height: 10px; border-radius: 999px; background: #0b1a3333; overflow: hidden; box-shadow: inset 0 2px 3px #0b1a3333; }
+.jam-progress__fill { height: 100%; border-radius: inherit; background: linear-gradient(90deg, #ffe680, var(--jam-accent)); transition: width .35s ease; }
+.jam-board { flex: 1; min-height: 0; position: relative; }
+.jam-board canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+
+.jam-boosters { display: flex; justify-content: center; gap: 26px; padding: 6px 16px calc(14px + env(safe-area-inset-bottom, 0px)); }
+.jam-booster { display: grid; justify-items: center; gap: 8px; padding: 0; border: 0; background: none; color: #fff; font: inherit; cursor: pointer; }
+.jam-booster__disc {
+  position: relative; display: grid; place-items: center; width: 64px; height: 64px; border-radius: 50%;
+  background: #fff; color: var(--jam-secondary-dark); box-shadow: inset 0 -5px 0 #c9d9ee, 0 6px 12px #0b1a3333;
+  transition: transform .08s;
+}
+.jam-booster:active:not(:disabled) .jam-booster__disc { transform: translateY(3px) scale(.97); }
+.jam-booster__count {
+  position: absolute; top: -4px; right: -6px; display: grid; place-items: center; min-width: 26px; height: 26px; padding: 0 6px;
+  border-radius: 999px; background: var(--jam-primary); color: #fff; font-size: .85rem; font-weight: 700; box-shadow: 0 0 0 3px #fff;
+}
+.jam-booster__price {
+  position: absolute; bottom: -9px; left: 50%; transform: translateX(-50%); display: inline-flex; align-items: center; gap: 3px;
+  padding: 2px 8px 2px 5px; border-radius: 999px; background: var(--jam-text); color: #fff; font-size: .75rem; font-weight: 700; white-space: nowrap;
+}
+.jam-booster__label { margin-top: 4px; font-size: .82rem; font-weight: 700; text-shadow: 0 1px 3px #0b1a3366; }
+.jam-booster:disabled { cursor: not-allowed; }
+.jam-booster:disabled .jam-booster__disc { opacity: .55; filter: grayscale(.7); }
+
+.jam-banner {
+  position: absolute; left: 0; right: 0; top: 40%; display: grid; justify-items: center; gap: 8px; pointer-events: none; z-index: 15;
+  animation: jam-banner 1.6s ease forwards;
+}
+.jam-banner strong { font-size: 2.8rem; font-weight: 700; color: #fff; text-shadow: 0 4px 0 var(--jam-secondary-dark), 0 8px 24px #0b1a3366; }
+.jam-banner span { padding: 4px 16px; border-radius: 999px; background: var(--jam-danger); color: #fff; font-weight: 700; font-size: 1.1rem; box-shadow: inset 0 -3px 0 #0003, 0 4px 12px #0b1a3340; }
+@keyframes jam-banner {
+  0% { opacity: 0; transform: scale(.6); }
+  14% { opacity: 1; transform: scale(1.08); }
+  24% { transform: scale(1); }
+  78% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-24px); }
+}
+
+/* ---------- Accueil ---------- */
+.jam-home {
+  position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; gap: 18px; overflow-y: auto;
+  padding: calc(12px + env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) calc(18px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+}
+.jam-home__top { align-self: stretch; display: flex; justify-content: space-between; align-items: center; }
+.jam-logo { margin: 4vh 0 0; display: grid; justify-items: center; line-height: .92; text-align: center; }
+.jam-logo__art { display: flex; align-items: flex-end; gap: 4px; margin-bottom: 10px; animation: jam-float 3.2s ease-in-out infinite; }
+.jam-logo__word { font-size: clamp(3rem, 15vw, 4.2rem); font-weight: 700; letter-spacing: .02em; color: #fff; text-transform: uppercase; text-shadow: 0 5px 0 var(--jam-secondary-dark), 0 10px 18px #0b1a3340; }
+.jam-logo__word--accent { color: var(--jam-accent); text-shadow: 0 5px 0 #c48f00, 0 10px 18px #0b1a3340; }
+@keyframes jam-float { 50% { transform: translateY(-6px); } }
+.jam-home__cta { display: grid; gap: 12px; width: min(320px, 100%); margin-top: auto; }
+.jam-home__cta .jam-btn--lg { animation: jam-breathe 2.4s ease-in-out infinite; }
+@keyframes jam-breathe { 50% { transform: scale(1.03); } }
+.jam-cta__label { white-space: nowrap; }
+.jam-card { width: min(360px, 100%); padding: 14px 16px; border-radius: 20px; background: #ffffffe6; color: var(--jam-text); box-shadow: inset 0 -4px 0 #c9d9ee, 0 8px 20px #0b1a3326; }
+.jam-howto p { margin: 0 0 10px; font-size: .92rem; line-height: 1.35; color: var(--jam-text); text-align: center; text-wrap: balance; }
+.jam-legend { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 6px; }
+.jam-legend li { display: flex; align-items: center; gap: 6px; min-width: 0; font-size: .74rem; color: var(--jam-muted); line-height: 1.1; }
+.jam-note { margin: 6px 0; color: var(--jam-muted); font-size: .82rem; text-align: center; }
+.jam-home > .jam-note { color: #ffffffd9; }
+
+/* ---------- Modales ---------- */
+.jam-backdrop { position: absolute; inset: 0; z-index: 20; display: grid; place-items: center; padding: 28px 18px; background: #0b1a33a6; animation: jam-fade .18s ease; }
 .jam-modal {
-  width: min(420px, 100%); max-height: 90vh; overflow: auto; padding: 20px; border-radius: 20px;
-  background: linear-gradient(180deg, #465069, #2a3144);
-  border: 3px solid #9aa3b3;
-  box-shadow: inset 0 0 0 2px #151a27, inset 0 3px 0 #ffffff33, 0 14px 40px #000b;
+  --tone: var(--jam-secondary); --tone-edge: var(--jam-secondary-dark);
+  position: relative; width: min(380px, 100%); max-height: calc(100% - 20px); overflow: visible;
+  padding: 46px 18px 16px; border-radius: 26px; background: var(--jam-surface); color: var(--jam-text);
+  box-shadow: inset 0 -6px 0 var(--jam-surface-alt), 0 20px 50px #0b1a3366;
+  animation: jam-pop .32s cubic-bezier(.2, 1.4, .4, 1);
 }
-.jam-modal__title { margin: 0 0 12px; font-size: 1.5rem; text-align: center; text-shadow: 0 3px 0 #000a; }
-.jam-modal__actions { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; margin-top: 16px; }
+.jam-modal--green { --tone: var(--jam-primary); --tone-edge: var(--jam-primary-dark); }
+.jam-modal--red { --tone: var(--jam-danger); --tone-edge: #a8232a; }
+.jam-modal--gold { --tone: #ff9f1c; --tone-edge: #c46a00; }
+.jam-modal__body { max-height: calc(100vh - 170px); overflow-y: auto; }
+.jam-ribbon {
+  position: absolute; top: -24px; left: 50%; transform: translateX(-50%); margin: 0; min-width: 72%; max-width: 94%;
+  padding: 10px 26px 14px; border-radius: 18px; background: var(--tone); color: #fff;
+  font-size: 1.45rem; font-weight: 700; text-align: center; white-space: nowrap; text-shadow: 0 2px 0 #0b1a3333;
+  box-shadow: inset 0 -5px 0 var(--tone-edge), 0 8px 16px #0b1a3340;
+}
+.jam-close {
+  position: absolute; top: 10px; right: 10px; width: 40px; height: 40px; border: 0; border-radius: 50%; cursor: pointer;
+  background: var(--jam-surface-alt); color: var(--jam-muted); font: inherit; font-size: 1.5rem; line-height: 1;
+}
+.jam-modal__actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 16px; }
 .jam-modal__actions--stack { flex-direction: column; }
-.jam-modal__actions--stack .jam-btn { width: 100%; }
-.jam-note { color: var(--jam-muted); font-size: .85rem; margin: 6px 0; font-weight: 600; }
-.jam-reward { display: flex; align-items: center; gap: 6px; justify-content: center; font-size: 1.1rem; color: var(--jam-accent); }
-.jam-timer { height: 12px; border-radius: 7px; background: #11151f; border: 2px solid #0b0e15; overflow: hidden; margin-top: 12px; }
-.jam-timer__bar { height: 100%; background: linear-gradient(180deg, #ffe08a, var(--jam-accent)); transition: width .25s linear; }
+.jam-modal__actions--stack .jam-btn:not(.jam-btn--ghost) { width: 100%; }
+.jam-lead { margin: 4px 4px 0; font-size: 1rem; line-height: 1.4; text-align: center; color: var(--jam-text); text-wrap: balance; }
+.jam-reward { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 6px 0 4px; font-size: 2.6rem; font-weight: 700; color: var(--jam-text); font-variant-numeric: tabular-nums; animation: jam-pop .5s .15s both cubic-bezier(.2, 1.6, .4, 1); }
+.jam-hero { display: grid; place-items: center; margin-bottom: 8px; }
+.jam-hero__slot { display: grid; place-items: center; width: 78px; height: 78px; border-radius: 50%; background: var(--jam-surface-alt); color: #ff9f1c; box-shadow: inset 0 -5px 0 #d5e1f0; animation: jam-pulse 1.2s ease-in-out infinite; }
+@keyframes jam-pulse { 50% { transform: scale(1.08); } }
+.jam-timer { height: 12px; margin: 14px 6px 0; border-radius: 999px; background: var(--jam-surface-alt); overflow: hidden; box-shadow: inset 0 2px 3px #0b1a3322; }
+.jam-timer__bar { height: 100%; border-radius: inherit; background: linear-gradient(90deg, #ffb347, #ff9f1c); transition: width .25s linear; }
 
-/* HUD : écrous à gauche, niveau et monde à droite */
-.jam-hud { position: relative; display: flex; align-items: flex-start; gap: 8px; padding: 10px 12px 6px; z-index: 10; }
-.jam-hud__home {
-  flex: none; width: 44px; height: 44px; border-radius: 50%; color: #fff; font-size: 1.3rem; text-shadow: 0 2px 0 #0009;
-  background: linear-gradient(180deg, #7d8799, #465060); border: 2px solid var(--jam-panel-edge); box-shadow: inset 0 2px 0 #ffffff55, 0 4px 8px #0007;
+.jam-shop { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.jam-shop__item {
+  position: relative; display: grid; justify-items: center; align-content: start; gap: 6px; padding: 14px 10px 10px; min-width: 0;
+  border-radius: 18px; background: var(--jam-surface-alt); text-align: center; box-shadow: inset 0 -4px 0 #d5e1f0;
 }
-.jam-hud__coins { margin-right: auto; font-size: .98rem; white-space: nowrap; }
-.jam-hud__level { flex-direction: column; align-items: stretch; gap: 4px; text-align: center; padding: 6px 18px; min-width: 0; }
-.jam-hud__level strong { font-size: 1.05rem; letter-spacing: .04em; text-transform: uppercase; white-space: nowrap; }
-.jam-neon {
-  display: block; padding: 2px 10px; border: 2px solid var(--jam-neon); border-radius: 9px; background: #0f2038;
-  color: #bdf0ff; font-size: .78rem; text-shadow: 0 0 6px var(--jam-neon); box-shadow: 0 0 8px var(--jam-neon), inset 0 0 6px #0008; white-space: nowrap;
+.jam-shop__item--wide { grid-column: span 2; grid-template-columns: auto 1fr auto; align-items: center; justify-items: start; text-align: left; padding: 12px; }
+.jam-shop__item .jam-btn { width: 100%; }
+.jam-shop__item--wide .jam-btn { width: auto; }
+.jam-shop__text { min-width: 0; }
+.jam-shop__text strong { display: block; font-size: 1rem; }
+.jam-shop__text small { display: block; color: var(--jam-muted); font-size: .8rem; line-height: 1.25; }
+.jam-art--nuts { display: flex; align-items: flex-end; justify-content: center; min-height: 34px; }
+.jam-art--nuts .jam-icon + .jam-icon { margin-left: -9px; }
+.jam-badge {
+  position: absolute; top: -9px; right: 8px; padding: 2px 9px; border-radius: 999px; background: var(--jam-danger); color: #fff;
+  font-size: .7rem; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; box-shadow: 0 3px 6px #0b1a3333;
 }
+.jam-promo__name { margin: 0 0 4px; font-size: 1.3rem; font-weight: 700; text-align: center; }
 
-/* Boosters : tuiles brillantes en bas à droite, libellé dessous */
-.jam-boosters { display: flex; justify-content: flex-end; gap: 12px; padding: 8px 14px calc(10px + env(safe-area-inset-bottom, 0px)); }
-.jam-booster { display: grid; justify-items: center; gap: 4px; min-width: 64px; padding: 0; border: 0; background: none; font: inherit; color: #fff; cursor: pointer; }
-.jam-booster__tile {
-  position: relative; display: grid; place-items: center; width: 62px; height: 62px; border-radius: 16px;
-  background: linear-gradient(180deg, #8fd0ff 0%, #3e8ef7 50%, #2457b8 100%); border: 3px solid #14306b;
-  box-shadow: inset 0 3px 0 #ffffff88, 0 3px 0 #0d2150, 0 7px 12px #0007;
+.jam-settings { display: grid; gap: 10px; }
+.jam-switch {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 54px; padding: 8px 14px;
+  border: 0; border-radius: 16px; background: var(--jam-surface-alt); color: var(--jam-text); font: inherit; font-size: 1.05rem; cursor: pointer;
 }
-.jam-booster:first-child .jam-booster__tile { background: linear-gradient(180deg, #ffe08a 0%, #f5a82b 50%, #c46a0e 100%); border-color: #6b3a07; box-shadow: inset 0 3px 0 #fff9, 0 3px 0 #4a2704, 0 7px 12px #0007; }
-.jam-booster__badge {
-  position: absolute; right: -6px; bottom: -8px; display: inline-flex; align-items: center; gap: 3px; padding: 1px 7px; border-radius: 999px;
-  background: #151a27; border: 2px solid #9aa3b3; font-size: .72rem; font-weight: 800; text-shadow: none;
-}
-.jam-booster__label { font-size: .78rem; font-weight: 800; text-shadow: 0 2px 0 #000b, 0 0 4px #000; margin-top: 6px; }
-.jam-booster:disabled { opacity: .45; }
-.jam-booster:active:not(:disabled) .jam-booster__tile { transform: translateY(2px); }
+.jam-switch__track { position: relative; width: 54px; height: 32px; border-radius: 999px; background: #c3cfdf; transition: background .2s; }
+.jam-switch__thumb { position: absolute; top: 3px; left: 3px; width: 26px; height: 26px; border-radius: 50%; background: #fff; box-shadow: 0 2px 4px #0b1a3340; transition: transform .2s; }
+.jam-switch[aria-checked="true"] .jam-switch__track { background: var(--jam-primary); }
+.jam-switch[aria-checked="true"] .jam-switch__thumb { transform: translateX(22px); }
 
-/* Accueil */
-.jam-home { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 24px 16px; text-align: center; overflow: auto; }
-.jam-home__title {
-  margin: 0; font-size: 3rem; line-height: 1; letter-spacing: .02em; color: #ffd25a;
-  text-shadow: 0 3px 0 #a5560f, 0 6px 0 #5b2d05, 0 12px 16px #000a;
+@keyframes jam-fade { from { opacity: 0; } }
+@keyframes jam-pop { from { opacity: 0; transform: scale(.85); } }
+@media (prefers-reduced-motion: reduce) {
+  .jam-root *, .jam-root *::before, .jam-root *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
-.jam-home__coins { display: flex; align-items: center; gap: 6px; margin: 0; color: var(--jam-accent); font-weight: 800; text-shadow: 0 2px 0 #0009; }
-.jam-home__actions { display: flex; flex-direction: column; gap: 12px; width: min(300px, 100%); }
-.jam-home__howto { max-width: 340px; color: #d3d9e6; font-size: .9rem; margin: 0; font-weight: 600; text-shadow: 0 1px 2px #000; }
-.jam-legend { list-style: none; margin: 0; padding: 0; display: flex; gap: 10px 14px; flex-wrap: wrap; justify-content: center; max-width: 340px; }
-.jam-legend li { display: flex; align-items: center; gap: 6px; font-size: .8rem; color: #d3d9e6; font-weight: 700; text-shadow: 0 1px 2px #000; }
-
-/* Boutique */
-.jam-shop { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
-.jam-shop__item { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border-radius: var(--jam-radius); background: #1a2030; border: 2px solid #0c0f17; box-shadow: inset 0 2px 0 #ffffff14; }
-.jam-shop__item small { display: block; color: var(--jam-muted); font-weight: 600; }
-.jam-badge { margin-left: 8px; padding: 2px 8px; border-radius: 999px; background: var(--jam-accent); color: #1a1a1a; font-size: .7rem; font-weight: 800; text-shadow: none; }
-.jam-promo__name { font-size: 1.2rem; font-weight: 800; margin: 0 0 4px; }
-@media (prefers-reduced-motion: reduce) { .jam-timer__bar, .jam-btn { transition: none; } }

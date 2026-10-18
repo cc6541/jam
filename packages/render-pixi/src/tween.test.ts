@@ -31,6 +31,21 @@ describe('TweenRunner', () => {
     expect(r.busy).toBe(false);
   });
 
+  it('un tween qui lève une exception est retiré sans bloquer les autres', () => {
+    const r = new TweenRunner();
+    const log: string[] = [];
+    const quiet = console.error;
+    console.error = () => undefined;
+    r.add({ delay: 0, duration: 100, easing: easings.linear, update: () => { throw new Error('objet détruit'); } });
+    r.add({ delay: 0, duration: 100, easing: easings.linear, update: () => undefined, onComplete: () => { throw new Error('fin'); } });
+    r.add({ delay: 0, duration: 100, easing: easings.linear, update: (t) => log.push(`ok${t}`), onComplete: () => log.push('done') });
+    r.tick(50);
+    r.finishAll();
+    console.error = quiet;
+    expect(log).toEqual(['ok0.5', 'ok1', 'done']);
+    expect(r.busy).toBe(false);
+  });
+
   it('les easings vont de 0 à 1', () => {
     for (const e of Object.values(easings)) {
       expect(e(0)).toBeCloseTo(0);

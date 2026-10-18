@@ -19,8 +19,8 @@ export const PRODUCTS: ProductDef[] = [
   { id: 'piggy', type: 'consumable', tier: 2.99 },
   { id: 'coins_s', type: 'consumable', tier: 0.99, coins: 400 },
   { id: 'coins_m', type: 'consumable', tier: 2.99, coins: 1300 },
-  { id: 'coins_l', type: 'consumable', tier: 4.99, coins: 2300, badge: 'best' },
-  { id: 'coins_xl', type: 'consumable', tier: 9.99, coins: 5000 },
+  { id: 'coins_l', type: 'consumable', tier: 4.99, coins: 2300 },
+  { id: 'coins_xl', type: 'consumable', tier: 9.99, coins: 5000, badge: 'best' },
 ];
 
 export const STARTER_BOOSTERS = { undo: 1, addToolboxSlot: 1, clearToolbox: 1 } as const;

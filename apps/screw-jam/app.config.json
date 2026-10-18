@@ -11,17 +11,19 @@
   ],
   "theme": {
     "ui": {
-      "background": "#1e2433",
-      "surface": "#2c3448",
-      "text": "#f4f6fb",
-      "textMuted": "#aab3c8",
-      "primary": "#3e8ef7",
-      "onPrimary": "#ffffff",
-      "accent": "#f5c33b",
-      "danger": "#e5484d",
-      "radius": "14px",
-      "panelEdge": "#2b303b",
-      "neon": "#3fd8ff"
+      "bgTop": "#5cc4ff",
+      "bgBottom": "#2f7fe0",
+      "surface": "#ffffff",
+      "surfaceAlt": "#eef4fb",
+      "text": "#1d2b4f",
+      "textMuted": "#5b6b8c",
+      "primary": "#2fbf5b",
+      "primaryDark": "#1d8a3f",
+      "secondary": "#2f8cf5",
+      "secondaryDark": "#1b5fb8",
+      "accent": "#ffc928",
+      "danger": "#f0444b",
+      "radius": "18px"
     }
   },
   "crossPromo": {

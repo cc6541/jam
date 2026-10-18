@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { DEFAULT_RULES, engine, type GameState, type LevelDef, type StepResult } from '@jam/engine-screw';
 import { DEFAULT_UI_THEME } from '@jam/ui';
 import { GameSession, type BoardPort } from './game-session';
-import { grantPurchase, isAvailable, isOwned, newProfile, completeLevel } from './profile';
+import { completeLevel, grantCoins, grantPurchase, isAvailable, isOwned, newProfile, withDefaults, type Profile } from './profile';
+import { isHardLevel } from './difficulty';
 import { mockCatalog, mockPrice, PRODUCTS } from './products';
 import type { RemoteConfig } from '@jam/shell';
 import remote from '../config/remote-config.json';
@@ -121,10 +122,30 @@ describe('profil et achats', () => {
     expect(isOwned({ ...p, noAds: true }, 'noads')).toBe(true);
   });
 
+  it('réglages : complétés pour les anciennes sauvegardes, bonus d’écrous', () => {
+    const { settings: _unused, ...old } = fresh();
+    expect(withDefaults(old as Profile).settings).toEqual({ sound: true, haptics: true });
+    expect(withDefaults({ ...fresh(), settings: { sound: false, haptics: true } }).settings.sound).toBe(false);
+    expect(grantCoins(fresh(), 40).wallet.coins).toBe(240);
+    expect(grantCoins(fresh(), -5).wallet.coins).toBe(200);
+  });
+
+  it('le badge « Meilleure offre » va au pack qui donne le plus d’écrous par unité de prix', () => {
+    const packs = PRODUCTS.filter((p) => p.coins && p.id.startsWith('coins_'));
+    const best = packs.reduce((a, b) => ((b.coins ?? 0) / b.tier > (a.coins ?? 0) / a.tier ? b : a));
+    expect(packs.filter((p) => p.badge === 'best').map((p) => p.id)).toEqual([best.id]);
+  });
+
   it('catalogue : prix localisés du mock', () => {
     expect(mockPrice(3.99, 'fr')).toContain('3,99');
     expect(mockPrice(3.99, 'en')).toBe('$3.99');
     expect(mockCatalog('en')).toHaveLength(PRODUCTS.length);
+  });
+});
+
+describe('badge Difficile', () => {
+  it('pics de fin de bloc, jamais pendant la prise en main', () => {
+    expect([...Array(40)].map((_, i) => i + 1).filter(isHardLevel)).toEqual([29, 30, 39, 40]);
   });
 });
 

@@ -6,7 +6,7 @@ export interface ScrewStyle {
   pattern: PatternId;
 }
 
-/** Matériau dessiné en aplats + reflets (pas de texture : rendu vectoriel, léger sur mobile d'entrée de gamme). */
+/** Matériau dessiné en aplats + reflets (pas de texture bitmap : léger sur mobile d'entrée de gamme). */
 export interface Material {
   base: number;
   light: number;
@@ -16,37 +16,38 @@ export interface Material {
 }
 
 export interface Theme {
-  plate: { metal: Material; wood: Material; alpha: number };
-  frame: { wood: Material; recess: number };
-  tray: { metal: Material; slot: number; slotEdge: number; text: number };
-  crate: { metal: Material; recess: number };
+  /** Planches, de la plus basse à la plus haute (plus claire = plus haute : la profondeur se lit d'un coup d'œil). */
+  plate: { layers: Material[]; alpha: number; hole: number; holeDeep: number };
+  /** Tapis sous le plateau. */
+  mat: { fill: number; alpha: number };
+  tray: { fill: number; alpha: number; edge: number; hole: number; holeRim: number; locked: number; lockedIcon: number };
+  crate: { hole: number };
   screws: Record<ColorId, ScrewStyle>;
+  fontFamily: string;
 }
 
 export const DEFAULT_THEME: Theme = {
   plate: {
-    // Légèrement translucides : on devine les vis bloquées sous une plaque.
-    alpha: 0.88,
-    metal: { base: 0xb4bfcf, light: 0xeaf0fa, dark: 0x5d6879 },
-    wood: { base: 0xa9743f, light: 0xd29c64, dark: 0x66411f, grain: 0x8a5a30 },
+    alpha: 0.9,
+    hole: 0x3a2414,
+    holeDeep: 0x1d1109,
+    layers: [
+      { base: 0xb07443, light: 0xd9a06a, dark: 0x6a3f1d, grain: 0x8f5a2f },
+      { base: 0xc4884f, light: 0xe8b884, dark: 0x7a4a22, grain: 0xa66c39 },
+      { base: 0xd59d63, light: 0xf3cd9c, dark: 0x8a5629, grain: 0xb98048 },
+      { base: 0xe2b27a, light: 0xfbe0b8, dark: 0x93602f, grain: 0xc79257 },
+    ],
   },
-  frame: {
-    wood: { base: 0x8a5a2b, light: 0xb98450, dark: 0x3f2610, grain: 0x6f4520 },
-    recess: 0x2b1d1c,
-  },
-  tray: {
-    metal: { base: 0x9ba7b8, light: 0xdfe6f2, dark: 0x4b5566 },
-    slot: 0x3a4150,
-    slotEdge: 0x1c2029,
-    text: 0xf1f4fa,
-  },
-  crate: { metal: { base: 0x434c5c, light: 0x7f8aa0, dark: 0x1f2530 }, recess: 0x262c38 },
+  mat: { fill: 0xffffff, alpha: 0.16 },
+  tray: { fill: 0xffffff, alpha: 0.92, edge: 0x9fb6d6, hole: 0xc5d3e6, holeRim: 0x7f95b5, locked: 0xeef3fa, lockedIcon: 0x9fb0c9 },
+  crate: { hole: 0x1d2433 },
   screws: {
-    red: { fill: 0xe5484d, pattern: 'dots' },
-    blue: { fill: 0x3e8ef7, pattern: 'stripes' },
-    yellow: { fill: 0xf5c33b, pattern: 'cross' },
-    green: { fill: 0x3fb950, pattern: 'wave' },
-    purple: { fill: 0xa371f7, pattern: 'grid' },
-    orange: { fill: 0xf0883e, pattern: 'plain' },
+    red: { fill: 0xf0444b, pattern: 'dots' },
+    blue: { fill: 0x2f8cf5, pattern: 'stripes' },
+    yellow: { fill: 0xffc928, pattern: 'cross' },
+    green: { fill: 0x2fbf63, pattern: 'wave' },
+    purple: { fill: 0x9b5cf6, pattern: 'grid' },
+    orange: { fill: 0xff8a2a, pattern: 'plain' },
   },
+  fontFamily: "Fredoka, ui-rounded, 'Arial Rounded MT Bold', system-ui, sans-serif",
 };
