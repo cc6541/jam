@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { BoosterGlyph, NutIcon, type BoosterIcon } from './icons';
 import type { StringKey } from './i18n';
 import { Button, Modal } from './primitives';
 import { Swatch, type SwatchDef } from './swatch';
@@ -11,22 +12,22 @@ export interface BoosterButton {
   /** Quantité possédée ; 0 = achat au prix indiqué. */
   owned: number;
   price: number;
+  icon: BoosterIcon;
   disabled?: boolean;
 }
 
 export function Hud({
   t,
   level,
+  world,
   coins,
-  boosters,
-  onBooster,
   onHome,
 }: {
   t: T;
   level: number;
+  /** Nom du monde, affiché en néon sous le numéro de niveau. */
+  world?: string;
   coins: number;
-  boosters: BoosterButton[];
-  onBooster: (id: string) => void;
   onHome: () => void;
 }) {
   return (
@@ -34,28 +35,59 @@ export function Hud({
       <button type="button" className="jam-hud__home" onClick={onHome} aria-label={t('home')}>
         ⌂
       </button>
-      <span className="jam-hud__level">
-        {t('level')} {level}
-      </span>
-      <span className="jam-hud__coins" aria-label={`${t('coins')}: ${coins}`}>
-        ● {coins}
-      </span>
-      <div className="jam-hud__boosters">
-        {boosters.map((b) => (
-          <button
-            key={b.id}
-            type="button"
-            className="jam-booster"
-            disabled={b.disabled === true}
-            onClick={() => onBooster(b.id)}
-            aria-label={`${b.label} (${b.owned > 0 ? `×${b.owned}` : `${b.price} ${t('coins')}`})`}
-          >
-            <span>{b.label}</span>
-            <small>{b.owned > 0 ? `×${b.owned}` : `● ${b.price}`}</small>
-          </button>
-        ))}
+      <div className="jam-plate jam-hud__coins" aria-label={`${t('coins')}: ${coins}`}>
+        <NutIcon />
+        <span>
+          {t('coins')} : {coins}
+        </span>
+      </div>
+      <div className="jam-plate jam-hud__level">
+        <strong>
+          {t('level')} {level}
+        </strong>
+        {world ? <span className="jam-neon">{world}</span> : null}
       </div>
     </header>
+  );
+}
+
+export function BoosterBar({
+  t,
+  boosters,
+  onBooster,
+}: {
+  t: T;
+  boosters: BoosterButton[];
+  onBooster: (id: string) => void;
+}) {
+  return (
+    <nav className="jam-boosters" aria-label="Boosters">
+      {boosters.map((b) => (
+        <button
+          key={b.id}
+          type="button"
+          className="jam-booster"
+          disabled={b.disabled === true}
+          onClick={() => onBooster(b.id)}
+          aria-label={`${b.label} (${b.owned > 0 ? `×${b.owned}` : `${b.price} ${t('coins')}`})`}
+        >
+          <span className="jam-booster__tile">
+            <BoosterGlyph icon={b.icon} />
+            <span className="jam-booster__badge">
+              {b.owned > 0 ? (
+                `×${b.owned}`
+              ) : (
+                <>
+                  <NutIcon size={12} />
+                  {b.price}
+                </>
+              )}
+            </span>
+          </span>
+          <span className="jam-booster__label">{b.label}</span>
+        </button>
+      ))}
+    </nav>
   );
 }
 
@@ -82,7 +114,7 @@ export function HomeScreen({
     <main className="jam-home">
       <h1 className="jam-home__title">{title}</h1>
       <p className="jam-home__coins">
-        ● {coins} {t('coins')}
+        <NutIcon size={20} /> {coins} {t('coins')}
       </p>
       <div className="jam-home__actions">
         <Button onClick={onPlay}>
@@ -231,8 +263,8 @@ export function EndModal({
   return (
     <Modal title={result === 'won' ? t('victory') : t('defeat')}>
       {result === 'won' && reward ? (
-        <p>
-          {t('reward')} : ● {reward}
+        <p className="jam-reward">
+          {t('reward')} : <NutIcon size={20} /> {reward}
         </p>
       ) : null}
       <div className="jam-modal__actions jam-modal__actions--stack">

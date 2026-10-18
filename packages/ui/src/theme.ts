@@ -10,6 +10,9 @@ export interface UiTheme {
   onPrimary: string;
   accent: string;
   danger: string;
+  /** Panneau métal (bord) et néon d'accent (nom du monde). */
+  panelEdge: string;
+  neon: string;
   radius: string;
   fontFamily: string;
 }
@@ -23,8 +26,10 @@ export const DEFAULT_UI_THEME: UiTheme = {
   onPrimary: '#ffffff',
   accent: '#f5c33b',
   danger: '#e5484d',
+  panelEdge: '#2b303b',
+  neon: '#3fd8ff',
   radius: '14px',
-  fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+  fontFamily: "ui-rounded, 'SF Pro Rounded', 'Arial Rounded MT Bold', 'Segoe UI', system-ui, sans-serif",
 };
 
 export function themeStyle(theme: UiTheme): CSSProperties {
@@ -37,6 +42,8 @@ export function themeStyle(theme: UiTheme): CSSProperties {
     '--jam-on-primary': theme.onPrimary,
     '--jam-accent': theme.accent,
     '--jam-danger': theme.danger,
+    '--jam-panel-edge': theme.panelEdge,
+    '--jam-neon': theme.neon,
     '--jam-radius': theme.radius,
     fontFamily: theme.fontFamily,
   } as CSSProperties;

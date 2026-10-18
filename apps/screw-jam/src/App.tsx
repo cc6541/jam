@@ -7,6 +7,7 @@ import {
   DEFAULT_UI_THEME,
   EndModal,
   HomeScreen,
+  BoosterBar,
   Hud,
   NearMissModal,
   ShopModal,
@@ -130,7 +131,7 @@ export function App({ s }: { s: Services }) {
 
     void (async () => {
       const a = new Application();
-      await a.init({ resizeTo: host, background: 0x1e2433, antialias: true, autoDensity: true, resolution: Math.min(2, devicePixelRatio) });
+      await a.init({ resizeTo: host, backgroundAlpha: 0, antialias: false, autoDensity: true, resolution: Math.min(2, devicePixelRatio) });
       if (cancelled) {
         a.destroy(true);
         return;
@@ -145,6 +146,7 @@ export function App({ s }: { s: Services }) {
         },
         onEnd,
         haptics: vibrateHaptics,
+        labels: { toolbox: t('toolbox') },
       });
       view = board;
       a.stage.addChild(board.root);
@@ -281,6 +283,7 @@ export function App({ s }: { s: Services }) {
     return {
       id,
       label: boosterNames[locale][id],
+      icon: id === 'undo' ? 'undo' : id === 'addToolboxSlot' ? 'slot' : 'clear',
       owned: profile.wallet.boosters[id],
       price: config.economy.boosterPrices[id],
       disabled: !playing || !usable || modal !== null,
@@ -315,8 +318,9 @@ export function App({ s }: { s: Services }) {
         />
       ) : (
         <div className="jam-play">
-          <Hud t={t} level={currentLevel.current} coins={profile.wallet.coins} boosters={boosters} onBooster={(id) => useBoosterButton(id as BoosterId)} onHome={goHome} />
+          <Hud t={t} level={currentLevel.current} world={appConfig.world[locale]} coins={profile.wallet.coins} onHome={goHome} />
           <div ref={boardEl} className="jam-board" />
+          <BoosterBar t={t} boosters={boosters} onBooster={(id) => useBoosterButton(id as BoosterId)} />
         </div>
       )}
 

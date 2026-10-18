@@ -3,22 +3,22 @@ import type { ProductId } from './products';
 
 export const productCopy: Record<Locale, Record<ProductId, { title: string; detail?: string; badge?: string }>> = {
   fr: {
-    starter: { title: 'Pack de démarrage', detail: '500 pièces + 3 boosters', badge: 'Une fois' },
+    starter: { title: 'Pack de démarrage', detail: '500 écrous + 3 boosters', badge: 'Une fois' },
     noads: { title: 'Sans pub', detail: 'Plus de pubs plein écran (les bonus restent optionnels)' },
     piggy: { title: 'Tirelire' },
-    coins_s: { title: 'Pièces', detail: '400 pièces' },
-    coins_m: { title: 'Sac de pièces', detail: '1 300 pièces' },
-    coins_l: { title: 'Coffre de pièces', detail: '2 300 pièces', badge: 'Top' },
-    coins_xl: { title: 'Trésor', detail: '5 000 pièces' },
+    coins_s: { title: 'Écrous', detail: '400 écrous' },
+    coins_m: { title: 'Sac d’écrous', detail: '1 300 écrous' },
+    coins_l: { title: 'Coffre d’écrous', detail: '2 300 écrous', badge: 'Top' },
+    coins_xl: { title: 'Trésor', detail: '5 000 écrous' },
   },
   en: {
-    starter: { title: 'Starter pack', detail: '500 coins + 3 boosters', badge: 'Once' },
+    starter: { title: 'Starter pack', detail: '500 nuts + 3 boosters', badge: 'Once' },
     noads: { title: 'No ads', detail: 'No more full-screen ads (bonus ads stay optional)' },
     piggy: { title: 'Piggy bank' },
-    coins_s: { title: 'Coins', detail: '400 coins' },
-    coins_m: { title: 'Coin bag', detail: '1,300 coins' },
-    coins_l: { title: 'Coin chest', detail: '2,300 coins', badge: 'Best' },
-    coins_xl: { title: 'Treasure', detail: '5,000 coins' },
+    coins_s: { title: 'Nuts', detail: '400 nuts' },
+    coins_m: { title: 'Nut bag', detail: '1,300 nuts' },
+    coins_l: { title: 'Nut chest', detail: '2,300 nuts', badge: 'Best' },
+    coins_xl: { title: 'Treasure', detail: '5,000 nuts' },
   },
 };
 

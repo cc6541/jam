@@ -5,7 +5,10 @@
   "bundleId": "com.jamfactory.screwjam",
   "bundleIdStatus": "placeholder",
   "engine": "engine-screw",
-  "locales": ["fr", "en"],
+  "locales": [
+    "fr",
+    "en"
+  ],
   "theme": {
     "ui": {
       "background": "#1e2433",
@@ -16,8 +19,16 @@
       "onPrimary": "#ffffff",
       "accent": "#f5c33b",
       "danger": "#e5484d",
-      "radius": "14px"
+      "radius": "14px",
+      "panelEdge": "#2b303b",
+      "neon": "#3fd8ff"
     }
   },
-  "crossPromo": { "excludeSelf": true }
+  "crossPromo": {
+    "excludeSelf": true
+  },
+  "world": {
+    "fr": "Atelier Néon",
+    "en": "Neon Workshop"
+  }
 }

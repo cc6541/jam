@@ -1,10 +1,11 @@
 // Vue Pixi du plateau. Elle affiche un GameState et anime les Cue du director :
 // aucune règle de jeu ici, l'état d'après fait toujours foi (sync en fin d'animation).
 import { Container, Graphics, Sprite, Text, type Renderer, type Texture } from 'pixi.js';
-import type { ColorId, GameState, Id, PatternId, Point, StepResult } from '@jam/engine-screw';
+import type { ColorId, GameState, Id, Point, StepResult } from '@jam/engine-screw';
 import { direct, rejectedTapCues, type Cue, type Target } from './director';
 import { silentHaptics, type HapticsPort } from './haptics';
 import { boxScrewCenter, computeLayout, slotCenter, toScreen, type Layout, type Rect } from './layout';
+import { centroid, crateGraphic, frameGraphic, lockedSlots, plateGraphic, screwHead, trayGraphic } from './skin';
 import { DEFAULT_THEME, type Theme } from './theme';
 import { easings, TweenRunner } from './tween';
 
@@ -12,6 +13,8 @@ export interface BoardViewOptions {
   onTap: (screwId: Id) => void;
   onEnd?: (result: 'won' | 'lost', nearMiss: boolean) => void;
   theme?: Theme;
+  /** Textes affichés dans le dessin (le rendu ne connaît pas la langue). */
+  labels?: { toolbox: string };
   haptics?: HapticsPort;
 }
 
@@ -25,6 +28,7 @@ const SHAKE = 220;
 
 export class BoardView {
   readonly root = new Container();
+  private readonly frameLayer = new Container();
   private readonly plateLayer = new Container({ sortableChildren: true });
   private readonly slotLayer = new Container();
   private readonly boxLayer = new Container();
@@ -34,7 +38,10 @@ export class BoardView {
   private readonly haptics: HapticsPort;
   private readonly textures = new Map<ColorId, Texture>();
   private readonly screws = new Map<Id, ScrewNode>();
-  private readonly plates = new Map<Id, Graphics>();
+  private readonly plates = new Map<Id, Container>();
+  /** Centre de chaque plaque : pivot de la chute (elle tourne sur elle-même). */
+  private readonly plateHome = new Map<Id, Point>();
+  private lockLayer = new Graphics();
   private boxes: Container[] = [];
   /** Boîte (index courant) de chaque vis en route ou rangée pendant une animation. */
   private readonly boxOf = new Map<Id, number>();
@@ -48,7 +55,7 @@ export class BoardView {
   ) {
     this.theme = options.theme ?? DEFAULT_THEME;
     this.haptics = options.haptics ?? silentHaptics;
-    this.root.addChild(this.slotLayer, this.plateLayer, this.boxLayer, this.overlay);
+    this.root.addChild(this.frameLayer, this.slotLayer, this.plateLayer, this.boxLayer, this.overlay);
   }
 
   get animating(): boolean {
@@ -97,28 +104,46 @@ export class BoardView {
 
   // ---------- Construction ----------
 
+  /** Fige un décor statique en une seule texture : un sprite par image au lieu de centaines de tracés et de masques. */
+  private bake<T extends Container>(node: T): T {
+    // Densité réelle de l'écran : sur un mobile 2x/3x les bords sont lisses sans antialiasing coûteux.
+    const resolution = this.renderer.resolution;
+    node.cacheAsTexture({ resolution, antialias: resolution < 2 });
+    return node;
+  }
+
   private build(): void {
     const state = this.state;
     if (!state) return;
     const layout = computeLayout(state.level, this.viewport);
     this.layout = layout;
-    for (const layer of [this.plateLayer, this.slotLayer, this.boxLayer, this.overlay]) {
+    for (const layer of [this.frameLayer, this.plateLayer, this.slotLayer, this.boxLayer, this.overlay]) {
       layer.removeChildren().forEach((c) => c.destroy({ children: true }));
     }
     for (const t of this.textures.values()) t.destroy(true);
     this.textures.clear();
     this.screws.clear();
     this.plates.clear();
+    this.plateHome.clear();
     this.boxes = [];
 
+    this.frameLayer.addChild(this.bake(frameGraphic(layout.board, this.theme)));
+    this.slotLayer.addChild(
+      this.bake(trayGraphic(layout, this.theme, state.level.rules.toolboxMaxSlots, this.options.labels?.toolbox ?? 'Toolbox')),
+    );
+    this.lockLayer = new Graphics();
+    this.slotLayer.addChild(this.lockLayer);
+
     for (const plate of state.level.plates) {
-      const g = new Graphics()
-        .poly(plate.polygon.map((p) => toScreen(layout, p)))
-        .fill({ color: this.theme.plate.fill, alpha: this.theme.plate.alpha })
-        .stroke({ width: 2, color: this.theme.plate.stroke });
+      const points = plate.polygon.map((p) => toScreen(layout, p));
+      const g = this.bake(plateGraphic(points, plate.z % 2 === 0 ? 'metal' : 'wood', this.theme));
+      const home = centroid(points);
+      g.pivot.set(home.x, home.y);
+      g.position.set(home.x, home.y);
       g.zIndex = plate.z * 2;
       g.eventMode = 'none';
       this.plates.set(plate.id, g);
+      this.plateHome.set(plate.id, home);
       this.plateLayer.addChild(g);
     }
 
@@ -131,9 +156,10 @@ export class BoardView {
       if (def.kind.type === 'multiTap') {
         label = new Text({
           text: '',
-          style: { fill: 0xffffff, fontSize: layout.screwRadius, fontWeight: '700', stroke: { color: 0x000000, width: 3 } },
+          style: { fill: 0xffffff, fontSize: layout.screwRadius * 0.95, fontWeight: '800', stroke: { color: 0x10131a, width: 4 } },
         });
         label.anchor.set(0.5);
+        label.y = layout.screwRadius * 1.3;
         node.addChild(label);
       }
       node.eventMode = 'static';
@@ -148,9 +174,9 @@ export class BoardView {
     if (cached) return cached;
     const r = this.layout?.screwRadius ?? 14;
     const style = this.theme.screws[color];
-    const g = new Graphics().circle(0, 0, r).fill(style.fill).stroke({ width: Math.max(2, r / 7), color: 0x111111 });
-    drawPattern(g, style.pattern, r * 0.62);
-    const texture = this.renderer.generateTexture({ target: g, resolution: Math.max(2, this.renderer.resolution) });
+    const g = new Graphics();
+    screwHead(g, r, style);
+    const texture = this.renderer.generateTexture({ target: g, resolution: Math.max(3, this.renderer.resolution), antialias: true });
     g.destroy();
     this.textures.set(color, texture);
     return texture;
@@ -166,7 +192,8 @@ export class BoardView {
 
     for (const [id, g] of this.plates) {
       g.visible = id in state.plates;
-      g.position.set(0, 0);
+      const home = this.plateHome.get(id);
+      if (home) g.position.set(home.x, home.y);
       g.rotation = 0;
       g.alpha = 1;
     }
@@ -178,7 +205,7 @@ export class BoardView {
     state.openBoxes.forEach((box, b) => {
       box.filled.forEach((id, slot) => homes.set(id, { parent: this.boxLayer, at: boxScrewCenter(layout, b, state.openBoxes.length, slot, state.level.rules.boxCapacity) }));
     });
-    state.toolbox.forEach((id, i) => homes.set(id, { parent: this.overlay, at: slotCenter(layout.toolbox, i, state.toolboxSlots) }));
+    state.toolbox.forEach((id, i) => homes.set(id, { parent: this.overlay, at: slotCenter(layout.toolbox, i, state.level.rules.toolboxMaxSlots) }));
     state.holding.forEach((id, i) => homes.set(id, { parent: this.overlay, at: slotCenter(holdingRect(layout), i, Math.max(7, state.holding.length)) }));
 
     for (const [id, { node, label }] of this.screws) {
@@ -208,14 +235,11 @@ export class BoardView {
     }
   }
 
+  /** Emplacements encore verrouillés (au-delà de `toolboxSlots`) : seule partie du bac qui change. */
   private drawSlots(state: GameState, layout: Layout): void {
-    this.slotLayer.removeChildren().forEach((c) => c.destroy());
-    const g = new Graphics();
-    for (let i = 0; i < state.toolboxSlots; i++) {
-      const c = slotCenter(layout.toolbox, i, state.toolboxSlots);
-      g.circle(c.x, c.y, layout.screwRadius * 1.15).fill(this.theme.slot);
-    }
-    this.slotLayer.addChild(g);
+    this.lockLayer.destroy();
+    this.lockLayer = lockedSlots(layout, state.toolboxSlots, state.level.rules.toolboxMaxSlots);
+    this.slotLayer.addChild(this.lockLayer);
   }
 
   private drawBoxes(state: GameState, layout: Layout): void {
@@ -236,16 +260,11 @@ export class BoardView {
     const w = Math.min(layout.boxes.width / count - 12, layout.screwRadius * 2.4 * capacity + 16);
     const h = layout.boxes.height * 0.8;
     const fill = this.theme.screws[color].fill;
-    c.addChild(
-      new Graphics()
-        .roundRect(center.x - w / 2, center.y - h / 2, w, h, 10)
-        .fill({ color: fill, alpha: 0.25 })
-        .stroke({ width: 3, color: fill }),
-    );
+    c.addChild(this.bake(crateGraphic({ x: center.x - w / 2, y: center.y - h / 2, width: w, height: h }, fill, this.theme)));
     for (let slot = 0; slot < capacity; slot++) {
       const ghost = new Sprite(this.screwTexture(color));
       ghost.anchor.set(0.5);
-      ghost.alpha = 0.22;
+      ghost.alpha = 0.3;
       const at = boxScrewCenter(layout, index, count, slot, capacity);
       ghost.position.set(at.x, at.y);
       c.addChild(ghost);
@@ -314,7 +333,7 @@ export class BoardView {
         const drop = layout.board.height * 0.9;
         const spin = (cue.plateId.length % 2 === 0 ? 1 : -1) * 0.35;
         add(cue.duration, easings.inQuad, (t) => {
-          g.y = drop * t;
+          g.y = (this.plateHome.get(cue.plateId)?.y ?? 0) + drop * t;
           g.rotation = spin * t;
           g.alpha = 1 - t;
         }, () => (g.visible = false));
@@ -372,7 +391,7 @@ export class BoardView {
       case 'box':
         return boxScrewCenter(layout, target.boxIndex, Math.max(1, this.boxes.length), target.slot, state.level.rules.boxCapacity);
       case 'toolbox':
-        return slotCenter(layout.toolbox, target.slot, state.toolboxSlots);
+        return slotCenter(layout.toolbox, target.slot, state.level.rules.toolboxMaxSlots);
       case 'holding':
         return slotCenter(holdingRect(layout), target.slot, Math.max(7, state.holding.length));
     }
@@ -382,32 +401,4 @@ export class BoardView {
 function holdingRect(layout: Layout): Rect {
   const h = layout.screwRadius * 2.4;
   return { x: layout.toolbox.x, y: layout.toolbox.y - h - 4, width: layout.toolbox.width, height: h };
-}
-
-/** Motif blanc translucide par-dessus la couleur (invariant 6). */
-function drawPattern(g: Graphics, pattern: PatternId, r: number): void {
-  const ink = { color: 0xffffff, alpha: 0.85 };
-  const line = { width: Math.max(2, r / 4), color: 0xffffff, alpha: 0.85, cap: 'round' as const };
-  switch (pattern) {
-    case 'dots':
-      for (const [x, y] of [[-0.45, -0.3], [0.45, -0.3], [0, 0.45]] as const) g.circle(x * r, y * r, r * 0.22).fill(ink);
-      return;
-    case 'stripes':
-      g.moveTo(-r * 0.7, r * 0.2).lineTo(r * 0.2, -r * 0.7).moveTo(-r * 0.2, r * 0.7).lineTo(r * 0.7, -r * 0.2).stroke(line);
-      return;
-    case 'cross':
-      g.moveTo(-r, 0).lineTo(r, 0).moveTo(0, -r).lineTo(0, r).stroke(line);
-      return;
-    case 'wave':
-      g.moveTo(-r, 0);
-      for (let i = 1; i <= 8; i++) g.lineTo(-r + (i * 2 * r) / 8, Math.sin((i / 8) * Math.PI * 2) * r * 0.4);
-      g.stroke(line);
-      return;
-    case 'grid':
-      g.rect(-r * 0.6, -r * 0.6, r * 1.2, r * 1.2).moveTo(0, -r * 0.6).lineTo(0, r * 0.6).moveTo(-r * 0.6, 0).lineTo(r * 0.6, 0).stroke(line);
-      return;
-    case 'plain':
-      g.circle(0, 0, r * 0.55).stroke(line);
-      return;
-  }
 }

@@ -11,7 +11,7 @@ const params = new URLSearchParams(location.search);
 let index = params.has('level') ? Number(params.get('level')) - 1 : levels.indexOf(heaviest);
 
 const app = new Application();
-await app.init({ resizeTo: window, background: 0x1e2433, antialias: true, autoDensity: true, resolution: Math.min(2, devicePixelRatio) });
+await app.init({ resizeTo: window, background: 0x1e2433, antialias: false, autoDensity: true, resolution: Math.min(2, devicePixelRatio) });
 document.body.prepend(app.canvas);
 
 let state: GameState;
@@ -29,6 +29,11 @@ const view = new BoardView(app.renderer, {
   haptics: vibrateHaptics,
 });
 app.stage.addChild(view.root);
+// Diagnostic : ?hide=0,2 masque des couches (0 cadre, 1 bac, 2 plaques et vis, 3 caisses, 4 vis rangées) pour isoler un coût.
+for (const i of (params.get('hide') ?? '').split(',').filter(Boolean)) {
+  const layer = view.root.children[Number(i)];
+  if (layer) layer.visible = false;
+}
 
 function start(auto = false): void {
   const level = levels[index];

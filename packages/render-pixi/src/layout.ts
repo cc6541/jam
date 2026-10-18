@@ -13,8 +13,10 @@ export interface Layout {
   boxes: Rect;
   /** Plateau, au milieu. */
   board: Rect;
-  /** Toolbox, en bas. */
+  /** Rangée des emplacements de la toolbox, en bas. */
   toolbox: Rect;
+  /** Bac complet de la toolbox (titre, rangée, numéros). */
+  tray: Rect;
   /** Pixels écran par unité du niveau. */
   scale: number;
   screwRadius: number;
@@ -24,7 +26,7 @@ const GAP = 12;
 
 export function computeLayout(level: LevelDef, viewport: { width: number; height: number }): Layout {
   const boxesHeight = Math.round(viewport.height * 0.14);
-  const toolboxHeight = Math.round(viewport.height * 0.1);
+  const toolboxHeight = Math.round(viewport.height * 0.125);
   const available = {
     width: viewport.width - 2 * GAP,
     height: viewport.height - boxesHeight - toolboxHeight - 4 * GAP,
@@ -35,7 +37,14 @@ export function computeLayout(level: LevelDef, viewport: { width: number; height
   return {
     boxes: { x: GAP, y: GAP, width: viewport.width - 2 * GAP, height: boxesHeight },
     board: { x: (viewport.width - width) / 2, y: boxesHeight + 2 * GAP + (available.height - height) / 2, width, height },
-    toolbox: { x: GAP, y: viewport.height - toolboxHeight - GAP, width: viewport.width - 2 * GAP, height: toolboxHeight },
+    tray: { x: GAP, y: viewport.height - toolboxHeight - GAP, width: viewport.width - 2 * GAP, height: toolboxHeight },
+    // Rangée des emplacements : sous le titre (22 px) et au-dessus des numéros (22 px).
+    toolbox: {
+      x: GAP + 10,
+      y: viewport.height - toolboxHeight - GAP + 22,
+      width: viewport.width - 2 * GAP - 20,
+      height: toolboxHeight - 44,
+    },
     scale,
     screwRadius: Math.max(8, Math.min(22, 3.2 * scale)),
   };

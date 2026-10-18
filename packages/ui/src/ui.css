@@ -1,39 +1,109 @@
-.jam-root { position: fixed; inset: 0; background: var(--jam-bg); color: var(--jam-text); -webkit-tap-highlight-color: transparent; }
+/* Habillage « atelier » : panneaux métal vissés, néon, boutons en relief. Toutes les couleurs d'app passent par les variables --jam-*. */
+.jam-root { position: fixed; inset: 0; background: var(--jam-bg); color: var(--jam-text); font-weight: 700; -webkit-tap-highlight-color: transparent; }
 .jam-root *, .jam-root *::before, .jam-root *::after { box-sizing: border-box; }
-.jam-btn { min-height: 48px; min-width: 48px; padding: 10px 18px; border: 0; border-radius: var(--jam-radius); font: inherit; font-weight: 700; cursor: pointer; }
-.jam-btn--primary { background: var(--jam-primary); color: var(--jam-on-primary); }
-.jam-btn--secondary { background: var(--jam-surface); color: var(--jam-text); box-shadow: inset 0 0 0 2px var(--jam-muted); }
-.jam-btn--danger { background: var(--jam-danger); color: #fff; }
+.jam-icon { flex: none; filter: drop-shadow(0 1px 0 #0006); }
+
+/* Plaque de métal avec deux rivets */
+.jam-plate {
+  position: relative; display: flex; align-items: center; gap: 8px; padding: 7px 20px; border-radius: 12px;
+  color: #fff; font-weight: 800; text-shadow: 0 2px 0 #0009;
+  background: linear-gradient(180deg, #7d8799 0%, #5f6a7b 48%, #465060 100%);
+  border: 2px solid var(--jam-panel-edge);
+  box-shadow: inset 0 2px 0 #ffffff66, inset 0 -3px 0 #0003, 0 4px 10px #0007;
+}
+.jam-plate::before, .jam-plate::after {
+  content: ""; position: absolute; top: 50%; width: 7px; height: 7px; margin-top: -3.5px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff, #98a2b3 55%, #4a5260); box-shadow: 0 1px 0 #0006;
+}
+.jam-plate::before { left: 6px; }
+.jam-plate::after { right: 6px; }
+
+/* Boutons en relief */
+.jam-btn {
+  min-height: 48px; min-width: 48px; padding: 10px 20px; border-radius: var(--jam-radius); font: inherit; font-weight: 800; cursor: pointer;
+  text-shadow: 0 2px 0 #0008; transition: transform .06s;
+}
+.jam-btn:active:not(:disabled) { transform: translateY(2px); }
+.jam-btn--primary {
+  color: var(--jam-on-primary);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--jam-primary) 62%, white) 0%, var(--jam-primary) 52%, color-mix(in srgb, var(--jam-primary) 72%, black) 100%);
+  border: 2px solid color-mix(in srgb, var(--jam-primary) 40%, black);
+  box-shadow: inset 0 2px 0 #ffffff77, 0 3px 0 color-mix(in srgb, var(--jam-primary) 45%, black), 0 7px 12px #0006;
+}
+.jam-btn--secondary {
+  color: var(--jam-text);
+  background: linear-gradient(180deg, #7d8799 0%, #5f6a7b 50%, #465060 100%);
+  border: 2px solid var(--jam-panel-edge);
+  box-shadow: inset 0 2px 0 #ffffff55, 0 3px 0 #1d222c, 0 7px 12px #0006;
+}
+.jam-btn--danger { color: #fff; background: linear-gradient(180deg, #ff7478, var(--jam-danger) 55%, #a52a2e); border: 2px solid #5a1416; box-shadow: inset 0 2px 0 #ffffff66, 0 3px 0 #5a1416, 0 7px 12px #0006; }
 .jam-btn:disabled { opacity: .45; cursor: not-allowed; }
 .jam-btn:focus-visible, .jam-booster:focus-visible, .jam-hud__home:focus-visible { outline: 3px solid var(--jam-accent); outline-offset: 2px; }
-.jam-backdrop { position: absolute; inset: 0; display: grid; place-items: center; padding: 16px; background: #000a; z-index: 20; }
-.jam-modal { width: min(420px, 100%); max-height: 90vh; overflow: auto; padding: 20px; border-radius: calc(var(--jam-radius) + 4px); background: var(--jam-surface); box-shadow: 0 12px 40px #0008; }
-.jam-modal__title { margin: 0 0 12px; font-size: 1.4rem; }
+
+/* Modales : plaque d'acier sombre */
+.jam-backdrop { position: absolute; inset: 0; display: grid; place-items: center; padding: 16px; background: #000b; z-index: 20; }
+.jam-modal {
+  width: min(420px, 100%); max-height: 90vh; overflow: auto; padding: 20px; border-radius: 20px;
+  background: linear-gradient(180deg, #465069, #2a3144);
+  border: 3px solid #9aa3b3;
+  box-shadow: inset 0 0 0 2px #151a27, inset 0 3px 0 #ffffff33, 0 14px 40px #000b;
+}
+.jam-modal__title { margin: 0 0 12px; font-size: 1.5rem; text-align: center; text-shadow: 0 3px 0 #000a; }
 .jam-modal__actions { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; margin-top: 16px; }
 .jam-modal__actions--stack { flex-direction: column; }
 .jam-modal__actions--stack .jam-btn { width: 100%; }
-.jam-note { color: var(--jam-muted); font-size: .85rem; margin: 6px 0; }
-.jam-timer { height: 10px; border-radius: 6px; background: var(--jam-bg); overflow: hidden; margin-top: 12px; }
-.jam-timer__bar { height: 100%; background: var(--jam-accent); transition: width .25s linear; }
-.jam-hud { position: relative; display: flex; align-items: center; gap: 10px; padding: 8px 12px; z-index: 10; pointer-events: none; flex-wrap: wrap; }
-.jam-hud > * { pointer-events: auto; }
-.jam-hud__home { width: 44px; height: 44px; border-radius: 50%; border: 0; background: var(--jam-surface); color: var(--jam-text); font-size: 1.3rem; }
-.jam-hud__level { font-weight: 800; }
-.jam-hud__coins { margin-left: auto; font-weight: 700; color: var(--jam-accent); }
-.jam-hud__boosters { display: flex; gap: 8px; width: 100%; justify-content: flex-end; }
-.jam-booster { min-width: 64px; min-height: 48px; padding: 4px 8px; border: 0; border-radius: 12px; background: var(--jam-surface); color: var(--jam-text); font: inherit; font-size: .8rem; display: grid; }
-.jam-booster small { color: var(--jam-accent); }
+.jam-note { color: var(--jam-muted); font-size: .85rem; margin: 6px 0; font-weight: 600; }
+.jam-reward { display: flex; align-items: center; gap: 6px; justify-content: center; font-size: 1.1rem; color: var(--jam-accent); }
+.jam-timer { height: 12px; border-radius: 7px; background: #11151f; border: 2px solid #0b0e15; overflow: hidden; margin-top: 12px; }
+.jam-timer__bar { height: 100%; background: linear-gradient(180deg, #ffe08a, var(--jam-accent)); transition: width .25s linear; }
+
+/* HUD : écrous à gauche, niveau et monde à droite */
+.jam-hud { position: relative; display: flex; align-items: flex-start; gap: 8px; padding: 10px 12px 6px; z-index: 10; }
+.jam-hud__home {
+  flex: none; width: 44px; height: 44px; border-radius: 50%; color: #fff; font-size: 1.3rem; text-shadow: 0 2px 0 #0009;
+  background: linear-gradient(180deg, #7d8799, #465060); border: 2px solid var(--jam-panel-edge); box-shadow: inset 0 2px 0 #ffffff55, 0 4px 8px #0007;
+}
+.jam-hud__coins { margin-right: auto; font-size: .98rem; white-space: nowrap; }
+.jam-hud__level { flex-direction: column; align-items: stretch; gap: 4px; text-align: center; padding: 6px 18px; min-width: 0; }
+.jam-hud__level strong { font-size: 1.05rem; letter-spacing: .04em; text-transform: uppercase; white-space: nowrap; }
+.jam-neon {
+  display: block; padding: 2px 10px; border: 2px solid var(--jam-neon); border-radius: 9px; background: #0f2038;
+  color: #bdf0ff; font-size: .78rem; text-shadow: 0 0 6px var(--jam-neon); box-shadow: 0 0 8px var(--jam-neon), inset 0 0 6px #0008; white-space: nowrap;
+}
+
+/* Boosters : tuiles brillantes en bas à droite, libellé dessous */
+.jam-boosters { display: flex; justify-content: flex-end; gap: 12px; padding: 8px 14px calc(10px + env(safe-area-inset-bottom, 0px)); }
+.jam-booster { display: grid; justify-items: center; gap: 4px; min-width: 64px; padding: 0; border: 0; background: none; font: inherit; color: #fff; cursor: pointer; }
+.jam-booster__tile {
+  position: relative; display: grid; place-items: center; width: 62px; height: 62px; border-radius: 16px;
+  background: linear-gradient(180deg, #8fd0ff 0%, #3e8ef7 50%, #2457b8 100%); border: 3px solid #14306b;
+  box-shadow: inset 0 3px 0 #ffffff88, 0 3px 0 #0d2150, 0 7px 12px #0007;
+}
+.jam-booster:first-child .jam-booster__tile { background: linear-gradient(180deg, #ffe08a 0%, #f5a82b 50%, #c46a0e 100%); border-color: #6b3a07; box-shadow: inset 0 3px 0 #fff9, 0 3px 0 #4a2704, 0 7px 12px #0007; }
+.jam-booster__badge {
+  position: absolute; right: -6px; bottom: -8px; display: inline-flex; align-items: center; gap: 3px; padding: 1px 7px; border-radius: 999px;
+  background: #151a27; border: 2px solid #9aa3b3; font-size: .72rem; font-weight: 800; text-shadow: none;
+}
+.jam-booster__label { font-size: .78rem; font-weight: 800; text-shadow: 0 2px 0 #000b, 0 0 4px #000; margin-top: 6px; }
 .jam-booster:disabled { opacity: .45; }
+.jam-booster:active:not(:disabled) .jam-booster__tile { transform: translateY(2px); }
+
+/* Accueil */
 .jam-home { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 24px 16px; text-align: center; overflow: auto; }
-.jam-home__title { margin: 0; font-size: 2.4rem; letter-spacing: .02em; }
-.jam-home__coins { margin: 0; color: var(--jam-accent); font-weight: 700; }
-.jam-home__actions { display: flex; flex-direction: column; gap: 10px; width: min(300px, 100%); }
-.jam-home__howto { max-width: 340px; color: var(--jam-muted); font-size: .9rem; margin: 0; }
+.jam-home__title {
+  margin: 0; font-size: 3rem; line-height: 1; letter-spacing: .02em; color: #ffd25a;
+  text-shadow: 0 3px 0 #a5560f, 0 6px 0 #5b2d05, 0 12px 16px #000a;
+}
+.jam-home__coins { display: flex; align-items: center; gap: 6px; margin: 0; color: var(--jam-accent); font-weight: 800; text-shadow: 0 2px 0 #0009; }
+.jam-home__actions { display: flex; flex-direction: column; gap: 12px; width: min(300px, 100%); }
+.jam-home__howto { max-width: 340px; color: #d3d9e6; font-size: .9rem; margin: 0; font-weight: 600; text-shadow: 0 1px 2px #000; }
 .jam-legend { list-style: none; margin: 0; padding: 0; display: flex; gap: 10px 14px; flex-wrap: wrap; justify-content: center; max-width: 340px; }
-.jam-legend li { display: flex; align-items: center; gap: 6px; font-size: .8rem; color: var(--jam-muted); }
+.jam-legend li { display: flex; align-items: center; gap: 6px; font-size: .8rem; color: #d3d9e6; font-weight: 700; text-shadow: 0 1px 2px #000; }
+
+/* Boutique */
 .jam-shop { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
-.jam-shop__item { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border-radius: var(--jam-radius); background: var(--jam-bg); }
-.jam-shop__item small { display: block; color: var(--jam-muted); }
-.jam-badge { margin-left: 8px; padding: 2px 8px; border-radius: 999px; background: var(--jam-accent); color: #1a1a1a; font-size: .7rem; font-weight: 800; }
+.jam-shop__item { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border-radius: var(--jam-radius); background: #1a2030; border: 2px solid #0c0f17; box-shadow: inset 0 2px 0 #ffffff14; }
+.jam-shop__item small { display: block; color: var(--jam-muted); font-weight: 600; }
+.jam-badge { margin-left: 8px; padding: 2px 8px; border-radius: 999px; background: var(--jam-accent); color: #1a1a1a; font-size: .7rem; font-weight: 800; text-shadow: none; }
 .jam-promo__name { font-size: 1.2rem; font-weight: 800; margin: 0 0 4px; }
-@media (prefers-reduced-motion: reduce) { .jam-timer__bar { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .jam-timer__bar, .jam-btn { transition: none; } }

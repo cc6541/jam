@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { createT, pickLocale } from './i18n';
-import { CrossPromoModal, EndModal, HomeScreen, Hud, NearMissModal, ShopModal } from './screens';
+import { BoosterBar, CrossPromoModal, EndModal, HomeScreen, Hud, NearMissModal, ShopModal } from './screens';
 import { Swatch, type SwatchDef } from './swatch';
 import { DEFAULT_UI_THEME, themeStyle } from './theme';
 
@@ -14,6 +14,7 @@ const swatches: SwatchDef[] = [
 describe('i18n', () => {
   it('remplace les variables et choisit la langue', () => {
     expect(t('nearMissBody', { n: 2 })).toContain('2 vis');
+    expect(t('coins')).toBe('Écrous');
     expect(createT('en')('play')).toBe('Play');
     expect(pickLocale('fr-CA')).toBe('fr');
     expect(pickLocale('de')).toBe('en');
@@ -24,7 +25,8 @@ describe('thème', () => {
   it('expose toutes les couleurs en variables CSS', () => {
     const style = themeStyle(DEFAULT_UI_THEME) as Record<string, string>;
     expect(style['--jam-primary']).toBe(DEFAULT_UI_THEME.primary);
-    expect(Object.keys(style).filter((k) => k.startsWith('--jam-')).length).toBe(9);
+    expect(style['--jam-neon']).toBe(DEFAULT_UI_THEME.neon);
+    expect(Object.keys(style).filter((k) => k.startsWith('--jam-')).length).toBe(11);
   });
 });
 
@@ -40,7 +42,7 @@ describe('accessibilité', () => {
       <HomeScreen t={t} title="Titre" nextLevel={3} coins={120} swatches={swatches} onPlay={() => undefined} onShop={() => undefined} />,
     );
     expect(html).toContain('Jouer · Niveau 3');
-    expect(html.match(/<svg/g)?.length).toBe(2);
+    expect(html.match(/role="img"/g)?.length).toBe(2);
   });
 
   it('les modales sont des dialogues nommés', () => {
@@ -79,14 +81,26 @@ describe('accessibilité', () => {
     expect(html).toContain('role="progressbar"');
     expect(html).toContain('aria-valuenow="5"');
     expect(html).toContain('width:50%');
-    expect(html).toMatch(/<button[^>]*disabled[^>]*>Utiliser 150 pièces/);
+    expect(html).toMatch(/<button[^>]*disabled[^>]*>Utiliser 150 écrous/);
   });
 
   it('HUD, fin de partie et cross-promo se rendent', () => {
-    const hud = renderToStaticMarkup(
-      <Hud t={t} level={4} coins={80} onHome={() => undefined} onBooster={() => undefined} boosters={[{ id: 'undo', label: 'Annuler', owned: 0, price: 60 }]} />,
+    const hud = renderToStaticMarkup(<Hud t={t} level={4} world="Atelier Néon" coins={80} onHome={() => undefined} />);
+    expect(hud).toContain('Écrous : 80');
+    expect(hud).toContain('Atelier Néon');
+    const bar = renderToStaticMarkup(
+      <BoosterBar
+        t={t}
+        onBooster={() => undefined}
+        boosters={[
+          { id: 'undo', label: 'Annuler', owned: 0, price: 60, icon: 'undo' },
+          { id: 'slot', label: '+1 case', owned: 2, price: 120, icon: 'slot', disabled: true },
+        ]}
+      />,
     );
-    expect(hud).toContain('60 Pièces');
+    expect(bar).toContain('aria-label="Annuler (60 Écrous)"');
+    expect(bar).toContain('×2');
+    expect(bar).toMatch(/<button[^>]*disabled[^>]*aria-label="\+1 case/);
     const win = renderToStaticMarkup(<EndModal t={t} result="won" reward={20} onNext={() => undefined} onRetry={() => undefined} onHome={() => undefined} />);
     expect(win).toContain('Niveau suivant');
     const lost = renderToStaticMarkup(<EndModal t={t} result="lost" onNext={() => undefined} onRetry={() => undefined} onHome={() => undefined} />);
