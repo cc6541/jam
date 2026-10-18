@@ -415,6 +415,80 @@ export class Painter {
   }
 
   /** Bac de la zone tampon : panneau blanc dépoli, alvéoles en creux. */
+  /** Établi façon plan d'atelier : panneau en creux, quadrillage fin et majeur, cotes pointillées, vis aux coins. */
+  mat(rect: Rect): Painted {
+    const { base, line } = this.theme.mat;
+    const [canvas, ctx] = this.canvas(rect.width, rect.height);
+    const radius = 26;
+    roundRect(ctx, 0, 0, rect.width, rect.height, radius);
+    const body = ctx.createLinearGradient(0, 0, 0, rect.height);
+    body.addColorStop(0, css(base, 0.34));
+    body.addColorStop(1, css(shade(base, -0.15), 0.42));
+    ctx.fillStyle = body;
+    ctx.fill();
+    ctx.save();
+    roundRect(ctx, 0, 0, rect.width, rect.height, radius);
+    ctx.clip();
+    // Quadrillage aligné sur le centre : le plateau tombe « juste » sur le plan.
+    const step = 18;
+    const cx = rect.width / 2;
+    const cy = rect.height / 2;
+    for (let k = -Math.ceil(cx / step); k * step <= cx; k++) {
+      const x = Math.round(cx + k * step) + 0.5;
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, rect.height);
+      ctx.strokeStyle = css(line, k % 5 === 0 ? 0.13 : 0.06);
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+    for (let k = -Math.ceil(cy / step); k * step <= cy; k++) {
+      const y = Math.round(cy + k * step) + 0.5;
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(rect.width, y);
+      ctx.strokeStyle = css(line, k % 5 === 0 ? 0.13 : 0.06);
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+    // Ombre portée intérieure (panneau en creux) et lumière en bas.
+    const inner = ctx.createLinearGradient(0, 0, 0, 22);
+    inner.addColorStop(0, 'rgba(8, 24, 60, 0.28)');
+    inner.addColorStop(1, 'rgba(8, 24, 60, 0)');
+    ctx.fillStyle = inner;
+    ctx.fillRect(0, 0, rect.width, 22);
+    ctx.restore();
+    roundRect(ctx, 1, 1, rect.width - 2, rect.height - 2, radius - 1);
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = css(line, 0.22);
+    ctx.stroke();
+    // Cotes pointillées en retrait.
+    roundRect(ctx, 12, 12, rect.width - 24, rect.height - 24, radius - 10);
+    ctx.setLineDash([6, 7]);
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = css(line, 0.2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    for (const [x, y] of [
+      [14, 14],
+      [rect.width - 14, 14],
+      [14, rect.height - 14],
+      [rect.width - 14, rect.height - 14],
+    ] as const) {
+      ctx.beginPath();
+      ctx.arc(x, y, 5, 0, Math.PI * 2);
+      ctx.fillStyle = css(line, 0.35);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(x - 3, y);
+      ctx.lineTo(x + 3, y);
+      ctx.strokeStyle = css(base, 0.8);
+      ctx.lineWidth = 1.4;
+      ctx.stroke();
+    }
+    return { texture: this.texture(canvas), x: rect.x, y: rect.y };
+  }
+
   tray(layout: Layout, maxSlots: number): Painted {
     const { tray, screwRadius: r } = layout;
     const margin = 16;

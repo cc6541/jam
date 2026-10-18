@@ -139,7 +139,8 @@ export function openChest(meta: MetaState, wallet: Wallet): { meta: MetaState; w
 
 // ---------- Nouveautés ----------
 
-export type IntroId = 'multiTap';
+/** `howTo` : règles du jeu, montrées au premier lancement. */
+export type IntroId = 'multiTap' | 'howTo';
 
 /** Nouveauté à présenter avant ce niveau, si elle n'a pas encore été vue. */
 export function introFor(meta: MetaState, level: LevelDef): IntroId | null {

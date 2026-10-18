@@ -1,7 +1,8 @@
 // Écrans des boucles de rétention : cadeau du jour, coffre, vies, nouveautés, annonce de niveau très difficile.
 import type { ReactNode } from 'react';
 import type { StringKey } from './i18n';
-import { AdIcon, BoosterGlyph, ChestIcon, GiftIcon, HeartIcon, NutIcon, type BoosterIcon } from './icons';
+import { AdIcon, BoosterGlyph, ChestIcon, GiftIcon, HeartIcon, NutIcon, ScrewArt, type BoosterIcon } from './icons';
+import { Swatch, type SwatchDef } from './swatch';
 import { Button, Modal } from './primitives';
 import { formatDuration } from './screens';
 
@@ -148,6 +149,37 @@ export function SuperHardModal({ t, level, multiplier, onPlay }: { t: T; level: 
         <Button variant="danger" onClick={onPlay}>
           {t('go')}
         </Button>
+      </div>
+    </Modal>
+  );
+}
+
+/** Règles en trois gestes, montrées au premier lancement puis depuis le bouton « Aide ». */
+export function HelpModal({ t, swatches, onOk }: { t: T; swatches: SwatchDef[]; onOk: () => void }) {
+  const steps: { key: 'howTo1' | 'howTo2' | 'howTo3'; art: ReactNode }[] = [
+    { key: 'howTo1', art: <span className="jam-howto__tap"><ScrewArt color="#ffc928" size={40} /></span> },
+    { key: 'howTo2', art: <span className="jam-howto__crate"><ScrewArt color="#2fbf63" size={19} /><ScrewArt color="#2fbf63" size={19} /><ScrewArt color="#2fbf63" size={19} /></span> },
+    { key: 'howTo3', art: <span className="jam-howto__tray">{[0, 1, 2, 3, 4].map((i) => <span key={i} className={`jam-howto__slot${i < 4 ? ' jam-howto__slot--full' : ''}`} />)}</span> },
+  ];
+  return (
+    <Modal title={t('howToTitle')} tone="blue">
+      <ol className="jam-howto">
+        {steps.map((s, i) => (
+          <li key={s.key} className="jam-howto__step">
+            <span className="jam-howto__num">{i + 1}</span>
+            <span className="jam-howto__art">{s.art}</span>
+            <span className="jam-howto__text">{t(s.key)}</span>
+          </li>
+        ))}
+      </ol>
+      <p className="jam-howto__legend-title">{t('patterns')}</p>
+      <div className="jam-howto__legend">
+        {swatches.map((sw) => (
+          <Swatch key={sw.id} swatch={sw} size={30} />
+        ))}
+      </div>
+      <div className="jam-modal__actions jam-modal__actions--stack">
+        <Button onClick={onOk}>{t('gotIt')}</Button>
       </div>
     </Modal>
   );

@@ -16,6 +16,8 @@ export interface Layout {
   tray: Rect;
   /** Rangée des emplacements de la toolbox, dans le bac. */
   toolbox: Rect;
+  /** Établi : zone de jeu sous la zone tampon, dans laquelle le plateau est centré. */
+  mat: Rect;
   /** Plateau à l'écran : cadre du contenu du niveau, centré. */
   board: Rect;
   /** Coin haut-gauche du contenu, dans le repère du niveau. */
@@ -81,7 +83,7 @@ export function computeLayout(level: Pick<LevelDef, 'plates' | 'board' | 'rules'
     26,
   );
 
-  return { boxes, tray, toolbox, board, origin: { x: content.x - CONTENT_PAD, y: content.y - CONTENT_PAD }, scale, screwRadius };
+  return { boxes, tray, toolbox, mat: area, board, origin: { x: content.x - CONTENT_PAD, y: content.y - CONTENT_PAD }, scale, screwRadius };
 }
 
 export function toScreen(layout: Layout, p: Point): Point {

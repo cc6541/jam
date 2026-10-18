@@ -15,7 +15,7 @@ import {
   WinModal,
 } from './screens';
 import { Swatch, type SwatchDef } from './swatch';
-import { ChestModal, DailyModal, IntroModal, NoLivesModal, SuperHardModal } from './meta-screens';
+import { ChestModal, DailyModal, HelpModal, IntroModal, NoLivesModal, SuperHardModal } from './meta-screens';
 import { DEFAULT_UI_THEME, themeStyle } from './theme';
 
 const t = createT('fr');
@@ -51,7 +51,7 @@ describe('accessibilité', () => {
     expect(html).toContain('<circle cx="-4.5"');
   });
 
-  it('accueil : logo, bouton du prochain niveau (avec badge Difficile), légende couleurs + motifs', () => {
+  it('accueil : logo, carte de progression, bouton du prochain niveau (avec badge Difficile)', () => {
     const html = renderToStaticMarkup(
       <HomeScreen
         t={t}
@@ -63,23 +63,31 @@ describe('accessibilité', () => {
         streak={3}
         chest={{ progress: 7, every: 10 }}
         dailyReady
-        swatches={swatches}
+        path={[
+          { level: 8, difficulty: 'normal', state: 'done' },
+          { level: 9, difficulty: 'hard', state: 'current' },
+          { level: 10, difficulty: 'superHard', state: 'next', chest: true },
+        ]}
         onPlay={noop}
         onShop={noop}
         onSettings={noop}
         onLives={noop}
         onDaily={noop}
+        onHelp={noop}
       />,
     );
     expect(html).toContain('<h1 class="jam-logo">');
     expect(html.replace(/<!-- -->/g, "")).toContain("Niveau 9");
     expect(html).toContain('Difficile');
-    expect(html.match(/role="img"/g)?.length).toBe(2);
     expect(html).toContain('aria-label="Réglages"');
     expect(html).toContain('2:05');
     expect(html).toContain('Série de 3 : +30 %');
-    expect(html).toContain('7/10 niveaux');
-    expect(html).toContain('jam-dailycard--ready');
+    expect(html).toContain('aria-label="Coffre 7/10"');
+    expect(html).toContain('jam-side__dot');
+    expect(html).toContain('aria-label="Jouer : Niveau 9, Difficile"');
+    expect(html).toContain('jam-node--done');
+    expect(html).toContain('>!!<');
+    expect(html).toContain('aria-label="Aide"');
   });
 
   it('barre du haut, progression, bannière', () => {
@@ -172,6 +180,10 @@ describe('accessibilité', () => {
     expect(lives).toMatch(/<button[^>]*disabled[^>]*>Toutes les vies/);
     expect(renderToStaticMarkup(<IntroModal t={t} title="Vis renforcées" body="b" art={null} onOk={noop} />)).toContain('Nouveau !');
     expect(renderToStaticMarkup(<SuperHardModal t={t} level={30} multiplier={3} onPlay={noop} />)).toContain('Récompense ×3');
+    const help = renderToStaticMarkup(<HelpModal t={t} swatches={swatches} onOk={noop} />);
+    expect(help).toContain('Comment jouer');
+    expect(help.match(/jam-howto__step/g)?.length).toBe(3);
+    expect(help).toContain('aria-label="Bleu à rayures"');
   });
 
   it('victoire : détail des bonus ; near miss : rappel de la série', () => {

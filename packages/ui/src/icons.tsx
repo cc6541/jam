@@ -167,3 +167,32 @@ export function GiftIcon({ size = 40 }: { size?: number }) {
     </svg>
   );
 }
+
+export function CheckIcon({ size = 20 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" className="jam-icon">
+      <path d="M5 12.5 10 17.5 19 7" fill="none" stroke="currentColor" strokeWidth="3.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+export function HelpIcon({ size = 26 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" className="jam-icon">
+      <path d="M9 9.2a3 3 0 1 1 4.2 2.8c-.8.4-1.2 1-1.2 1.9v.6" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" />
+      <circle cx="12" cy="18.4" r="1.6" fill="currentColor" />
+    </svg>
+  );
+}
+
+export function ShopIcon({ size = 30 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 48 48" aria-hidden="true" className="jam-icon">
+      <path d="M8 16h32l-2.5 24a3 3 0 0 1-3 2.7H13.5a3 3 0 0 1-3-2.7Z" fill="#9b5cf6" stroke="#5b2fb0" strokeWidth="1.6" />
+      <path d="M17 20v-6a7 7 0 0 1 14 0v6" fill="none" stroke="#5b2fb0" strokeWidth="3" strokeLinecap="round" />
+      <path d="M11 19h26" stroke="#c4a3ff" strokeWidth="2" strokeLinecap="round" />
+      <circle cx="24" cy="30" r="6" fill="#ffc928" stroke="#b07a00" strokeWidth="1.4" />
+      <circle cx="24" cy="30" r="2.2" fill="#b07a00" />
+    </svg>
+  );
+}

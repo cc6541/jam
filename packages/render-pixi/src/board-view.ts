@@ -42,6 +42,7 @@ const ENTER = 280;
 
 export class BoardView {
   readonly root = new Container();
+  private readonly matLayer = new Container();
   private readonly trayLayer = new Container();
   private readonly plateLayer = new Container({ sortableChildren: true });
   private readonly boxLayer = new Container();
@@ -75,7 +76,7 @@ export class BoardView {
     this.theme = options.theme ?? DEFAULT_THEME;
     this.haptics = options.haptics ?? silentHaptics;
     this.sounds = options.sounds ?? silentSound;
-    this.root.addChild(this.trayLayer, this.plateLayer, this.boxLayer, this.overlay, this.fxLayer);
+    this.root.addChild(this.matLayer, this.trayLayer, this.plateLayer, this.boxLayer, this.overlay, this.fxLayer);
   }
 
   get animating(): boolean {
@@ -155,7 +156,7 @@ export class BoardView {
     const layout = computeLayout(state.level, this.viewport);
     this.layout = layout;
     for (const crate of this.boxes) this.releaseScrews(crate.node);
-    for (const layer of [this.trayLayer, this.plateLayer, this.boxLayer, this.overlay]) {
+    for (const layer of [this.matLayer, this.trayLayer, this.plateLayer, this.boxLayer, this.overlay]) {
       layer.removeChildren().forEach((c) => c.destroy({ children: true }));
     }
     this.painter?.destroy();
@@ -167,6 +168,7 @@ export class BoardView {
     this.boxes = [];
     const r = layout.screwRadius;
 
+    this.matLayer.addChild(this.sprite(painter.mat(layout.mat)));
     this.trayLayer.addChild(this.sprite(painter.tray(layout, state.level.rules.toolboxMaxSlots)));
     this.lockLayer = new Container();
     this.trayLayer.addChild(this.lockLayer);

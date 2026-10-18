@@ -8,6 +8,7 @@ import {
   CrossPromoModal,
   DailyModal,
   DEFAULT_UI_THEME,
+  HelpModal,
   HomeScreen,
   IntroModal,
   LevelBanner,
@@ -25,6 +26,7 @@ import {
   type Difficulty,
   type RewardItem,
   type ShopProduct,
+  type PathNode,
   type SwatchDef,
 } from '@jam/ui';
 import { Application } from 'pixi.js';
@@ -65,7 +67,8 @@ type Modal =
   | { kind: 'chest'; items: RewardItem[] }
   | { kind: 'noLives' }
   | { kind: 'intro'; id: IntroId; level: number }
-  | { kind: 'superHard'; level: number };
+  | { kind: 'superHard'; level: number }
+  | { kind: 'help' };
 
 const BOOSTERS: BoosterId[] = ['undo', 'addToolboxSlot', 'clearToolbox'];
 const BANNER_MS = 1600;
@@ -75,6 +78,22 @@ const hex = (n: number) => `#${n.toString(16).padStart(6, '0')}`;
 const NUT_PACKS: ProductId[] = ['coins_s', 'coins_m', 'coins_l', 'coins_xl'];
 
 const difficultyOf = (tier: LevelTier): Difficulty => (tier === 'hard' || tier === 'superHard' ? tier : 'normal');
+
+/** Tronçon de la carte autour du prochain niveau : deux niveaux faits, puis ce qui arrive (pics et coffres visibles d'avance). */
+function pathAround(next: number, levelAt: (n: number) => LevelDef | undefined): PathNode[] {
+  const nodes: PathNode[] = [];
+  for (let n = Math.max(1, next - 2); nodes.length < 7; n++) {
+    const def = levelAt(n);
+    if (!def) break;
+    nodes.push({
+      level: n,
+      difficulty: difficultyOf(tierOfLevel(def)),
+      state: n < next ? 'done' : n === next ? 'current' : 'next',
+      ...(n % META.chestEvery === 0 ? { chest: true } : {}),
+    });
+  }
+  return nodes;
+}
 
 function rewardItems(reward: Reward): RewardItem[] {
   const icon = { undo: 'undo', addToolboxSlot: 'slot', clearToolbox: 'clear' } as const;
@@ -151,8 +170,11 @@ export function App({ s }: { s: Services }) {
         nolives: { kind: 'noLives' },
         intro: { kind: 'intro', id: 'multiTap', level: 11 },
         superhard: { kind: 'superHard', level: 30 },
+        help: { kind: 'help' },
       };
       if (show && previews[show]) setModal(previews[show]);
+      // Premier lancement : les règles d'abord, le cadeau du jour ensuite.
+      else if (!loaded.meta.intros.includes('howTo')) setModal({ kind: 'help' });
       else if (dailyOffer(loaded.meta, s.clock.now()) !== null) setModal({ kind: 'daily' });
     });
     const flush = () => void s.clock.flush();
@@ -515,12 +537,13 @@ export function App({ s }: { s: Services }) {
           streak={profile.meta.streak}
           chest={{ progress: chestProgress(profile.meta, profile.nextLevel - 1).progress, every: META.chestEvery }}
           dailyReady={offer !== null}
-          swatches={swatches}
+          path={pathAround(profile.nextLevel, levelAt)}
           onPlay={() => requestPlay(profile.nextLevel)}
           onShop={() => setModal({ kind: 'shop' })}
           onSettings={() => setModal({ kind: 'settings' })}
           onLives={() => lives.count < META.lives.max && setModal({ kind: 'noLives' })}
           onDaily={() => setModal({ kind: 'daily' })}
+          onHelp={() => setModal({ kind: 'help' })}
           footer={mockNote}
         />
       ) : (
@@ -628,6 +651,17 @@ export function App({ s }: { s: Services }) {
             const target = modal.level;
             updateProfile((p) => ({ ...p, meta: markIntro(p.meta, modal.id) }));
             requestPlay(target, { intro: true });
+          }}
+        />
+      ) : null}
+      {modal?.kind === 'help' ? (
+        <HelpModal
+          t={t}
+          swatches={swatches}
+          onOk={() => {
+            const first = !profile.meta.intros.includes('howTo');
+            if (first) updateProfile((p) => ({ ...p, meta: markIntro(p.meta, 'howTo') }));
+            setModal(first && offer !== null ? { kind: 'daily' } : null);
           }}
         />
       ) : null}

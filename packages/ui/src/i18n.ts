@@ -62,6 +62,11 @@ const fr = {
   promoInstall: 'Découvrir',
   promoLater: 'Plus tard',
   howTo: 'Touche les vis libres : elles vont dans la caisse de leur couleur, sinon dans la zone tampon.',
+  help: 'Aide',
+  howToTitle: 'Comment jouer',
+  howTo1: 'Touche une vis libre pour la dévisser.',
+  howTo2: 'Elle file dans la caisse de sa couleur… ou attend dans la zone tampon.',
+  howTo3: 'Zone tampon pleine : partie perdue. Libère d’abord les couleurs demandées !',
   patterns: 'Chaque couleur a son motif',
   mockBadge: 'Mode démo : achats et pubs simulés',
 };
@@ -130,6 +135,11 @@ const en: Strings = {
   promoInstall: 'Check it out',
   promoLater: 'Later',
   howTo: 'Tap free screws: they go to the box of their colour, otherwise to the buffer.',
+  help: 'Help',
+  howToTitle: 'How to play',
+  howTo1: 'Tap a free screw to unscrew it.',
+  howTo2: 'It flies into the box of its colour… or waits in the buffer.',
+  howTo3: 'Buffer full: game over. Free the requested colours first!',
   patterns: 'Every colour has its pattern',
   mockBadge: 'Demo mode: purchases and ads are simulated',
 };

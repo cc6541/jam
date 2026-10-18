@@ -1,22 +1,25 @@
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import type { StringKey } from './i18n';
+import { useEffect, useState } from 'react';
 import {
   AdIcon,
   BoosterGlyph,
+  CheckIcon,
   ChestIcon,
   FlameIcon,
   GearIcon,
   GiftIcon,
   HeartIcon,
+  HelpIcon,
   NutIcon,
   PlusIcon,
   ProductArt,
   ScrewArt,
+  ShopIcon,
   type BoosterIcon,
   type ProductIcon,
 } from './icons';
 import { Button, Modal, Switch } from './primitives';
-import { Swatch, type SwatchDef } from './swatch';
 
 type T = (key: StringKey, vars?: Record<string, string | number>) => string;
 
@@ -44,7 +47,10 @@ function CoinsButton({ t, coins, onShop }: { t: T; coins: number; onShop: () => 
   return (
     <button type="button" className="jam-coins" onClick={onShop} aria-label={`${t('coins')}: ${coins}. ${t('addCoins')}`}>
       <NutIcon size={24} />
-      <span className="jam-coins__value">{formatNumber(coins)}</span>
+      {/* La clé change avec le solde : le chiffre « saute » à chaque gain. */}
+      <span key={coins} className="jam-coins__value">
+        {formatNumber(coins)}
+      </span>
       <span className="jam-coins__plus">
         <PlusIcon size={14} />
       </span>
@@ -189,6 +195,84 @@ export function LivesPill({ t, lives, onClick }: { t: T; lives: LivesInfo; onCli
   );
 }
 
+export interface PathNode {
+  level: number;
+  difficulty: Difficulty;
+  state: 'done' | 'current' | 'next';
+  /** Un coffre s'ouvre après ce niveau. */
+  chest?: boolean;
+}
+
+/** Abscisse (en %) d'un niveau sur le chemin : sinueuse et stable d'une session à l'autre. */
+const pathX = (level: number) => 50 + Math.sin(level * 1.15) * 27;
+
+/** Carte de progression : niveaux faits, niveau courant mis en avant, pics de difficulté et coffres à venir. */
+export function LevelPath({ t, nodes, onPlay }: { t: T; nodes: PathNode[]; onPlay: () => void }) {
+  const last = Math.max(1, nodes.length - 1);
+  const points = nodes.map((n, i) => ({ x: pathX(n.level), y: 90 - (i * 80) / last }));
+  const d = points
+    .map((p, i) => {
+      if (i === 0) return `M ${p.x} ${p.y}`;
+      const prev = points[i - 1] as { x: number; y: number };
+      const my = (prev.y + p.y) / 2;
+      return `C ${prev.x} ${my}, ${p.x} ${my}, ${p.x} ${p.y}`;
+    })
+    .join(' ');
+  const doneUntil = nodes.findIndex((n) => n.state === 'current');
+  const dDone = doneUntil > 0 ? d.split(' C ').slice(0, doneUntil + 1).join(' C ') : '';
+  return (
+    <div className="jam-map" role="list" aria-label={t('level')}>
+      <svg className="jam-map__path" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+        <path d={d} className="jam-map__road" vectorEffect="non-scaling-stroke" />
+        <path d={d} className="jam-map__dash" vectorEffect="non-scaling-stroke" />
+        {dDone ? <path d={dDone} className="jam-map__done" vectorEffect="non-scaling-stroke" /> : null}
+      </svg>
+      {nodes.map((n, i) => {
+        const p = points[i] as { x: number; y: number };
+        const label = `${t('level')} ${n.level}${n.difficulty === 'hard' ? `, ${t('hard')}` : n.difficulty === 'superHard' ? `, ${t('superHard')}` : ''}`;
+        const content =
+          n.state === 'done' ? <CheckIcon size={22} /> : <span className="jam-node__num">{n.level}</span>;
+        return (
+          <div key={n.level} role="listitem" className="jam-node__slot" style={{ left: `${p.x}%`, top: `${p.y}%` }}>
+            {n.state === 'current' ? (
+              <>
+                <span className="jam-node__token" aria-hidden="true">
+                  <ScrewArt color="#ffc928" size={40} />
+                </span>
+                <button type="button" className={`jam-node jam-node--current jam-node--${n.difficulty}`} onClick={onPlay} aria-label={`${t('play')} : ${label}`}>
+                  {content}
+                </button>
+              </>
+            ) : (
+              <span className={`jam-node jam-node--${n.state} jam-node--${n.difficulty}`} aria-label={label}>
+                {content}
+                {n.state === 'next' && n.difficulty !== 'normal' ? <span className="jam-node__flag">{n.difficulty === 'superHard' ? '!!' : '!'}</span> : null}
+              </span>
+            )}
+            {n.chest ? (
+              <span className={`jam-node__chest${n.state === 'done' ? ' jam-node__chest--open' : ''}`} aria-hidden="true">
+                <ChestIcon size={30} />
+              </span>
+            ) : null}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function SideButton({ label, onClick, children, dot, ring }: { label: string; onClick: () => void; children: ReactNode; dot?: boolean; ring?: number }) {
+  return (
+    <button type="button" className="jam-side" onClick={onClick} aria-label={label}>
+      <span className="jam-side__disc" style={ring !== undefined ? ({ '--ring': `${Math.round(ring * 360)}deg` } as CSSProperties) : undefined}>
+        {children}
+        {dot ? <span className="jam-side__dot" /> : null}
+      </span>
+      <span className="jam-side__label">{label}</span>
+    </button>
+  );
+}
+
 export function HomeScreen({
   t,
   title,
@@ -199,12 +283,13 @@ export function HomeScreen({
   streak,
   chest,
   dailyReady,
-  swatches,
+  path,
   onPlay,
   onShop,
   onSettings,
   onLives,
   onDaily,
+  onHelp,
   footer,
 }: {
   t: T;
@@ -217,12 +302,13 @@ export function HomeScreen({
   /** Avancement vers le prochain coffre. */
   chest: { progress: number; every: number };
   dailyReady: boolean;
-  swatches: SwatchDef[];
+  path: PathNode[];
   onPlay: () => void;
   onShop: () => void;
   onSettings: () => void;
   onLives: () => void;
   onDaily: () => void;
+  onHelp: () => void;
   footer?: ReactNode;
 }) {
   const words = title.split(' ');
@@ -239,41 +325,42 @@ export function HomeScreen({
 
       <h1 className="jam-logo">
         <span className="jam-logo__art">
-          <ScrewArt color="#f0444b" size={54} />
-          <ScrewArt color="#ffc928" size={70} />
-          <ScrewArt color="#2fbf63" size={54} />
+          <ScrewArt color="#f0444b" size={34} />
+          <ScrewArt color="#ffc928" size={44} />
+          <ScrewArt color="#2fbf63" size={34} />
         </span>
-        {words.length > 0 ? <span className="jam-logo__word">{words.join(' ')}</span> : null}
-        <span className="jam-logo__word jam-logo__word--accent">{last}</span>
+        <span className="jam-logo__words">
+          {words.length > 0 ? <span className="jam-logo__word">{words.join(' ')}</span> : null}
+          <span className="jam-logo__word jam-logo__word--accent">{last}</span>
+        </span>
       </h1>
 
-      {streak > 0 ? (
-        <p className="jam-home__streak">
-          <FlameIcon size={22} /> {t('streakBonus', { n: streak, p: Math.min(streak, 5) * 10 })}
-        </p>
-      ) : null}
-
-      <div className="jam-home__cards">
-        <div className="jam-card jam-progresscard" aria-label={`${t('chest')} : ${t('chestProgress', { n: chest.progress, max: chest.every })}`}>
-          <ChestIcon size={42} />
-          <div className="jam-progresscard__body">
-            <strong>{t('chest')}</strong>
-            <div className="jam-progress jam-progress--card">
-              <div className="jam-progress__fill" style={{ width: `${(chest.progress / chest.every) * 100}%` }} />
-            </div>
-            <small>{t('chestProgress', { n: chest.progress, max: chest.every })}</small>
-          </div>
+      <div className="jam-home__stage">
+        <LevelPath t={t} nodes={path} onPlay={onPlay} />
+        <div className="jam-home__side jam-home__side--left">
+          <SideButton label={t('daily')} onClick={onDaily} dot={dailyReady}>
+            <GiftIcon size={36} />
+          </SideButton>
+          <SideButton label={t('shop')} onClick={onShop}>
+            <ShopIcon size={34} />
+          </SideButton>
         </div>
-        <button type="button" className={`jam-card jam-dailycard${dailyReady ? ' jam-dailycard--ready' : ''}`} onClick={onDaily}>
-          <GiftIcon size={42} />
-          <span>
-            <strong>{t('daily')}</strong>
-            <small>{dailyReady ? t('dailyReady') : t('dailyCome')}</small>
-          </span>
-        </button>
+        <div className="jam-home__side jam-home__side--right">
+          <SideButton label={`${t('chest')} ${chest.progress}/${chest.every}`} onClick={onPlay} ring={chest.progress / chest.every}>
+            <ChestIcon size={36} />
+          </SideButton>
+          <SideButton label={t('help')} onClick={onHelp}>
+            <HelpIcon />
+          </SideButton>
+        </div>
       </div>
 
       <div className="jam-home__cta">
+        {streak > 0 ? (
+          <p className="jam-home__streak">
+            <FlameIcon size={20} /> {t('streakBonus', { n: streak, p: Math.min(streak, 5) * 10 })}
+          </p>
+        ) : null}
         <Button size="lg" onClick={onPlay}>
           <span className="jam-cta__label">
             {t('level')} {nextLevel}
@@ -281,18 +368,6 @@ export function HomeScreen({
           <DifficultyBadge t={t} difficulty={nextDifficulty} inline />
         </Button>
       </div>
-
-      <section className="jam-card jam-howto">
-        <p>{t('howTo')}</p>
-        <ul className="jam-legend" aria-label={t('patterns')}>
-          {swatches.map((s) => (
-            <li key={s.id}>
-              <Swatch swatch={s} size={30} />
-              <span>{s.label}</span>
-            </li>
-          ))}
-        </ul>
-      </section>
       {footer}
     </main>
   );
@@ -440,11 +515,13 @@ export function WinModal({
   onMultiply: () => void;
   onContinue: () => void;
 }) {
+  const shown = useCountUp(reward);
   return (
     <Modal title={t('levelComplete')} tone="green">
       <div className="jam-reward">
-        <NutIcon size={46} />
-        <span>+{reward}</span>
+        <span className="jam-rays" aria-hidden="true" />
+        <NutIcon size={50} />
+        <span aria-label={`+${reward}`}>+{shown}</span>
       </div>
       {bonuses.length > 0 ? (
         <ul className="jam-bonuses">
@@ -547,4 +624,26 @@ export function CrossPromoModal({
       </div>
     </Modal>
   );
+}
+
+/** Compteur qui défile jusqu'à `target` (instantané si l'utilisateur réduit les animations). */
+function useCountUp(target: number, duration = 700): number {
+  const [value, setValue] = useState(0);
+  useEffect(() => {
+    const reduce = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce) {
+      setValue(target);
+      return;
+    }
+    let frame = 0;
+    const start = performance.now();
+    const step = (now: number) => {
+      const k = Math.min(1, (now - start) / duration);
+      setValue(Math.round(target * (1 - (1 - k) ** 3)));
+      if (k < 1) frame = requestAnimationFrame(step);
+    };
+    frame = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(frame);
+  }, [target, duration]);
+  return value;
 }

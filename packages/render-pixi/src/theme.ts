@@ -20,6 +20,8 @@ export interface Theme {
   plate: { layers: Material[] };
   /** Zone tampon : couleur des alvéoles, des emplacements verrouillés et de leur « + ». */
   tray: { hole: number; locked: number; lockedIcon: number };
+  /** Établi sous le plateau : plan d'atelier (fond, quadrillage). */
+  mat: { base: number; line: number };
   screws: Record<ColorId, ScrewStyle>;
   fontFamily: string;
 }
@@ -34,6 +36,7 @@ export const DEFAULT_THEME: Theme = {
     ],
   },
   tray: { hole: 0xc2d0e3, locked: 0xe6edf7, lockedIcon: 0x9fb0c9 },
+  mat: { base: 0x1f5fb8, line: 0xffffff },
   screws: {
     red: { fill: 0xf0444b, pattern: 'dots' },
     blue: { fill: 0x2f8cf5, pattern: 'stripes' },
