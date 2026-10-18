@@ -7,15 +7,17 @@ Les sous-agents sont définis dans `.claude/agents/*.md` (frontmatter `model` et
 | `architect` | opus | high | Monorepo, contrats, décisions, revue des PR | racine, `types.ts`, schéma, `docs/` |
 | `qa` | opus | medium | Tests écrits **depuis la spec, avant le code** | `**/*.test.ts` |
 | `engine` | opus | high | Réducteur, solveur, générateur | `packages/engine-*`, `packages/level-tools` |
-| `render` | sonnet | medium | PixiJS, animations, haptique | `packages/render-pixi` |
+| `render` | opus | high | Direction artistique du plateau, PixiJS + Canvas 2D, animations, sons, haptique | `packages/render-pixi` |
 | `shell` | sonnet | medium | Save, économie, ports, SDK | `packages/shell`, `packages/cross-promo` |
-| `ui` | sonnet | low | React, thèmes, modales | `packages/ui`, `apps/*/src` |
+| `ui` | opus | high | Design et code des écrans React, thèmes, modales | `packages/ui`, `apps/*/src` |
 | `publisher` | haiku | — | ASO, config d'app, assets texte | `apps/*/ASO.json`, `apps/*/app.config.json` |
 
 Session principale par défaut (`.claude/settings.json`) : **sonnet, effort medium**. Elle orchestre et
 délègue ; passer à Opus (`/model opus`) seulement pour une décision d'architecture menée soi-même.
 Skill `new-app` : sonnet, effort low (copie et configuration). Le sous-agent intégré `Explore` garde son modèle par défaut.
 Monter d'un cran (`/effort high` ou `xhigh`) pour un bug que le niveau par défaut ne résout pas, puis revenir.
+`render` et `ui` sont sur opus/high depuis le 2026-10-18 : la qualité graphique est un critère de succès du jeu,
+et ces agents doivent juger un rendu sur captures, pas seulement faire passer des tests.
 
 ## Règles d'orchestration
 1. **Contrats d'abord** (phase 1). Ensuite, travail en parallèle sur des packages disjoints, chacun dans son worktree.
