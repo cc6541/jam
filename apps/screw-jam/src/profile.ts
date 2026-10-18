@@ -9,6 +9,7 @@ import {
   type RemoteConfig,
   type Wallet,
 } from '@jam/shell';
+import { newMeta, type MetaState } from './meta';
 import { PRODUCTS, STARTER_BOOSTERS, type ProductId } from './products';
 
 export interface Settings {
@@ -26,13 +27,20 @@ export interface Profile {
   starterBought: boolean;
   promo: PromoState;
   settings: Settings;
+  /** Boucles de rétention : série, vies, cadeau du jour, coffres, nouveautés vues. */
+  meta: MetaState;
 }
 
 export const PROFILE_VERSION = 1;
 
 /** Sauvegardes antérieures aux réglages : on complète sans changer de version. */
 export function withDefaults(profile: Profile): Profile {
-  return { ...profile, settings: { ...DEFAULT_SETTINGS, ...profile.settings } };
+  const meta = newMeta(0);
+  return {
+    ...profile,
+    settings: { ...DEFAULT_SETTINGS, ...profile.settings },
+    meta: { ...meta, ...profile.meta, lives: profile.meta?.lives ?? meta.lives, daily: profile.meta?.daily ?? meta.daily },
+  };
 }
 
 export const newProfile = (economy: EconomyConfig): Profile => ({
@@ -42,6 +50,7 @@ export const newProfile = (economy: EconomyConfig): Profile => ({
   starterBought: false,
   promo: newPromoState(),
   settings: { ...DEFAULT_SETTINGS },
+  meta: newMeta(0),
 });
 
 /** Bonus en écrous (ex. récompense multipliée après une pub). */

@@ -1,34 +1,33 @@
 import { describe, expect, it } from 'vitest';
-import { generateLevel } from '@jam/engine-screw';
-import { BLOCK, blockMeans, blockParams, generateCurve, pickBlock, type RatedLevel } from './curve';
+import { designLevel, miss, targetFor, tierOf } from './curve';
 
-const rated = (scores: number[]): RatedLevel[] =>
-  scores.map((score, i) => ({ level: generateLevel(`l${i}`, i, blockParams(0)), score }));
-
-describe('courbe de difficulté', () => {
-  it('les paramètres grossissent avec le bloc', () => {
-    expect(blockParams(9).groups).toBeGreaterThan(blockParams(0).groups);
-    expect(blockParams(9).colors).toBeLessThanOrEqual(6);
+describe('courbe v2', () => {
+  it('cycle de 10 : respiration, normal, difficile au 5, très difficile au 10', () => {
+    expect([1, 2, 3].map(tierOf)).toEqual(['tutorial', 'tutorial', 'tutorial']);
+    expect([11, 12, 15, 16, 20].map(tierOf)).toEqual(['breather', 'normal', 'hard', 'breather', 'superHard']);
   });
 
-  it('pickBlock prend la fenêtre la plus facile qui atteint le plancher, triée', () => {
-    const pool = rated([50, 0, 10, 20, 30, 40, 60, 70, 80, 90, 5, 15]);
-    const easiest = pickBlock(pool, 0)!.map((r) => r.score);
-    expect(easiest).toEqual([0, 5, 10, 15, 20, 30, 40, 50, 60, 70]);
-    expect(pickBlock(pool, 40)!.map((r) => r.score)).toEqual([10, 15, 20, 30, 40, 50, 60, 70, 80, 90]);
-    expect(pickBlock(pool, 0, 38)!.map((r) => r.score)).toEqual([5, 10, 15, 20, 30, 40, 50, 60, 70, 80]);
-    expect(pickBlock(pool, 99)).toBeUndefined();
-    expect(pickBlock(rated([1, 2]), 0)).toBeUndefined();
+  it('les cibles se resserrent avec la progression et selon le rôle', () => {
+    expect(targetFor(40).minSlots[0]).toBeGreaterThanOrEqual(targetFor(4).minSlots[0]);
+    expect(targetFor(30).minSlots).toEqual([5, 5]);
+    expect(targetFor(25).minSlots[0]).toBeGreaterThanOrEqual(4);
+    expect(targetFor(26).minSlots[1]).toBeLessThanOrEqual(2);
+    expect(targetFor(30).params.trap).toBe(1);
+    expect(targetFor(12).params.multiTapRate).toBeGreaterThan(0);
+    expect(targetFor(9).params.multiTapRate).toBe(0);
   });
 
-  it('blockMeans regroupe par blocs de 10', () => {
-    expect(blockMeans([...Array<number>(BLOCK).fill(2), ...Array<number>(BLOCK).fill(4)])).toEqual([2, 4]);
+  it('écart à la cible', () => {
+    const t = targetFor(30);
+    expect(miss(t, { minSlots: 5, trapRate: 0.9 })).toBe(0);
+    expect(miss(t, { minSlots: 4, trapRate: 0.9 })).toBe(1);
   });
 
-  it('generateCurve produit des niveaux numérotés, triés dans le bloc', () => {
-    const levels = generateCurve({ appId: 'demo', blocks: 1, seed: 1, candidates: 10 });
-    expect(levels.map((r) => r.level.id).slice(0, 2)).toEqual(['demo-001', 'demo-002']);
-    const scores = levels.map((r) => r.score);
-    expect(scores).toEqual([...scores].sort((a, b) => a - b));
+  it('designLevel produit un niveau mesuré et étiqueté, déterministe', () => {
+    const a = designLevel('demo', 2, 1, 5);
+    expect(a.level.id).toBe('demo-002');
+    expect(a.level.meta?.tier).toBe('tutorial');
+    expect(a.level.meta?.minSlots).toBeLessThanOrEqual(5);
+    expect(designLevel('demo', 2, 1, 5).level).toEqual(a.level);
   });
 });

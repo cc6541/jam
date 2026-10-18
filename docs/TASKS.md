@@ -63,6 +63,15 @@ Agent conseillé entre crochets (voir `docs/AGENTS.md`).
 - [ ] `ASO.json` (titre, sous-titre, mots-clés, FR + EN), captures.
   **DoD :** build Capacitor iOS + Android ; TestFlight et test interne Play publiés.
 
+## Phase 6b — Rétention et difficulté (refonte, `docs/GAME-DESIGN.md`)
+- [x] Courbe v2 : cycle de 10 (respiration, normal, difficile, très difficile) avec cibles mesurées (cases minimales, piège).
+  **DoD :** 100 niveaux validés ; normaux de 0,8 à 3,5 cases nécessaires du 1er au 10e bloc, pics à 4,3 et 4,9/5.
+  Preuve : `pnpm levels:stats` (tutorial 0.0, breather 1.7, normal 2.4, hard 4.3, superHard 4.9 ; piège 0 → 97 %).
+- [x] Méta : série de victoires, vies, cadeau du jour sur 7 jours, coffre tous les 10 niveaux, récompense ×2/×3 sur les pics,
+  carte de nouveauté (vis renforcées), annonce des niveaux très difficiles.
+  **DoD :** logique testée (`meta.test.ts`), parcours joués en navigateur sans erreur (victoires, coffre, défaite → −1 vie).
+- [ ] Mesurer en vrai (Firebase) : courbe de churn par niveau, niveau de la première défaite, J1/J7 ; recaler les cibles.
+
 ## Phase 7 — Valider la factory [architect]
 - [ ] Créer une deuxième app avec le skill `new-app` (même moteur, autre thème).
   **DoD :** nouvelle app jouable en moins d'une journée, sans modifier `packages/*`.

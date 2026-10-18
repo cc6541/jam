@@ -5,42 +5,154 @@
   "description": "Miroir de LevelDef (packages/engine-screw/src/types.ts). Gelé après la phase 1.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schemaVersion", "id", "seed", "board", "plates", "screws", "boxQueue", "rules"],
+  "required": [
+    "schemaVersion",
+    "id",
+    "seed",
+    "board",
+    "plates",
+    "screws",
+    "boxQueue",
+    "rules"
+  ],
   "properties": {
-    "schemaVersion": { "const": 1 },
-    "id": { "$ref": "#/definitions/id" },
-    "seed": { "type": "integer", "minimum": 0, "maximum": 4294967295 },
+    "schemaVersion": {
+      "const": 1
+    },
+    "id": {
+      "$ref": "#/definitions/id"
+    },
+    "seed": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 4294967295
+    },
     "board": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["width", "height"],
+      "required": [
+        "width",
+        "height"
+      ],
       "properties": {
-        "width": { "type": "number", "exclusiveMinimum": 0 },
-        "height": { "type": "number", "exclusiveMinimum": 0 }
+        "width": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "height": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        }
       }
     },
-    "plates": { "type": "array", "minItems": 1, "items": { "$ref": "#/definitions/plate" } },
-    "screws": { "type": "array", "minItems": 1, "items": { "$ref": "#/definitions/screw" } },
-    "boxQueue": { "type": "array", "minItems": 1, "items": { "$ref": "#/definitions/color" } },
-    "rules": { "$ref": "#/definitions/rules" }
+    "plates": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/definitions/plate"
+      }
+    },
+    "screws": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/definitions/screw"
+      }
+    },
+    "boxQueue": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/definitions/color"
+      }
+    },
+    "rules": {
+      "$ref": "#/definitions/rules"
+    },
+    "meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "tier",
+        "minSlots",
+        "trapRate"
+      ],
+      "properties": {
+        "tier": {
+          "enum": [
+            "tutorial",
+            "breather",
+            "normal",
+            "hard",
+            "superHard"
+          ]
+        },
+        "minSlots": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "trapRate": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    }
   },
   "definitions": {
-    "id": { "type": "string", "minLength": 1, "maxLength": 64 },
-    "color": { "enum": ["red", "blue", "yellow", "green", "purple", "orange"] },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "color": {
+      "enum": [
+        "red",
+        "blue",
+        "yellow",
+        "green",
+        "purple",
+        "orange"
+      ]
+    },
     "point": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["x", "y"],
-      "properties": { "x": { "type": "number" }, "y": { "type": "number" } }
+      "required": [
+        "x",
+        "y"
+      ],
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      }
     },
     "plate": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "z", "polygon"],
+      "required": [
+        "id",
+        "z",
+        "polygon"
+      ],
       "properties": {
-        "id": { "$ref": "#/definitions/id" },
-        "z": { "type": "integer" },
-        "polygon": { "type": "array", "minItems": 3, "items": { "$ref": "#/definitions/point" } }
+        "id": {
+          "$ref": "#/definitions/id"
+        },
+        "z": {
+          "type": "integer"
+        },
+        "polygon": {
+          "type": "array",
+          "minItems": 3,
+          "items": {
+            "$ref": "#/definitions/point"
+          }
+        }
       }
     },
     "screwKind": {
@@ -48,45 +160,111 @@
         {
           "type": "object",
           "additionalProperties": false,
-          "required": ["type"],
-          "properties": { "type": { "const": "standard" } }
+          "required": [
+            "type"
+          ],
+          "properties": {
+            "type": {
+              "const": "standard"
+            }
+          }
         },
         {
           "type": "object",
           "additionalProperties": false,
-          "required": ["type", "taps"],
-          "properties": { "type": { "const": "multiTap" }, "taps": { "type": "integer", "minimum": 2, "maximum": 9 } }
+          "required": [
+            "type",
+            "taps"
+          ],
+          "properties": {
+            "type": {
+              "const": "multiTap"
+            },
+            "taps": {
+              "type": "integer",
+              "minimum": 2,
+              "maximum": 9
+            }
+          }
         }
       ]
     },
     "screw": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "color", "kind", "at", "pins"],
+      "required": [
+        "id",
+        "color",
+        "kind",
+        "at",
+        "pins"
+      ],
       "properties": {
-        "id": { "$ref": "#/definitions/id" },
-        "color": { "$ref": "#/definitions/color" },
-        "kind": { "$ref": "#/definitions/screwKind" },
-        "at": { "$ref": "#/definitions/point" },
-        "pins": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/definitions/id" } }
+        "id": {
+          "$ref": "#/definitions/id"
+        },
+        "color": {
+          "$ref": "#/definitions/color"
+        },
+        "kind": {
+          "$ref": "#/definitions/screwKind"
+        },
+        "at": {
+          "$ref": "#/definitions/point"
+        },
+        "pins": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/definitions/id"
+          }
+        }
       }
     },
     "rules": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["boxCapacity", "activeBoxes", "toolboxSlots", "toolboxMaxSlots", "nearMiss"],
+      "required": [
+        "boxCapacity",
+        "activeBoxes",
+        "toolboxSlots",
+        "toolboxMaxSlots",
+        "nearMiss"
+      ],
       "properties": {
-        "boxCapacity": { "type": "integer", "minimum": 1 },
-        "activeBoxes": { "type": "integer", "minimum": 1 },
-        "toolboxSlots": { "type": "integer", "minimum": 1 },
-        "toolboxMaxSlots": { "type": "integer", "minimum": 1 },
+        "boxCapacity": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "activeBoxes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "toolboxSlots": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "toolboxMaxSlots": {
+          "type": "integer",
+          "minimum": 1
+        },
         "nearMiss": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["maxRemaining", "offerSeconds"],
+          "required": [
+            "maxRemaining",
+            "offerSeconds"
+          ],
           "properties": {
-            "maxRemaining": { "type": "integer", "minimum": 0 },
-            "offerSeconds": { "type": "integer", "minimum": 0 }
+            "maxRemaining": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "offerSeconds": {
+              "type": "integer",
+              "minimum": 0
+            }
           }
         }
       }

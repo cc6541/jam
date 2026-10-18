@@ -15,6 +15,7 @@ import {
   WinModal,
 } from './screens';
 import { Swatch, type SwatchDef } from './swatch';
+import { ChestModal, DailyModal, IntroModal, NoLivesModal, SuperHardModal } from './meta-screens';
 import { DEFAULT_UI_THEME, themeStyle } from './theme';
 
 const t = createT('fr');
@@ -52,19 +53,40 @@ describe('accessibilité', () => {
 
   it('accueil : logo, bouton du prochain niveau (avec badge Difficile), légende couleurs + motifs', () => {
     const html = renderToStaticMarkup(
-      <HomeScreen t={t} title="Screw Jam" nextLevel={9} nextHard coins={1450} swatches={swatches} onPlay={noop} onShop={noop} onSettings={noop} />,
+      <HomeScreen
+        t={t}
+        title="Screw Jam"
+        nextLevel={9}
+        nextDifficulty="hard"
+        coins={1450}
+        lives={{ count: 3, max: 5, nextIn: 125_000 }}
+        streak={3}
+        chest={{ progress: 7, every: 10 }}
+        dailyReady
+        swatches={swatches}
+        onPlay={noop}
+        onShop={noop}
+        onSettings={noop}
+        onLives={noop}
+        onDaily={noop}
+      />,
     );
     expect(html).toContain('<h1 class="jam-logo">');
     expect(html.replace(/<!-- -->/g, "")).toContain("Niveau 9");
     expect(html).toContain('Difficile');
     expect(html.match(/role="img"/g)?.length).toBe(2);
     expect(html).toContain('aria-label="Réglages"');
+    expect(html).toContain('2:05');
+    expect(html).toContain('Série de 3 : +30 %');
+    expect(html).toContain('7/10 niveaux');
+    expect(html).toContain('jam-dailycard--ready');
   });
 
   it('barre du haut, progression, bannière', () => {
-    const top = renderToStaticMarkup(<TopBar t={t} level={4} hard coins={80} onSettings={noop} onShop={noop} />);
+    const top = renderToStaticMarkup(<TopBar t={t} level={4} difficulty="superHard" streak={2} coins={80} onSettings={noop} onShop={noop} />);
     expect(top).toContain('aria-label="Écrous: 80. Obtenir des écrous"');
-    expect(top).toContain('Difficile');
+    expect(top).toContain('Très difficile');
+    expect(top).toContain('aria-label="Série : 2"');
     const bar = renderToStaticMarkup(<ProgressBar label="Progression" value={0.42} />);
     expect(bar).toContain('aria-valuenow="42"');
     expect(bar).toContain('width:42%');
@@ -133,5 +155,31 @@ describe('accessibilité', () => {
     expect(settings).toContain('role="switch" aria-checked="true"');
     expect(settings).toContain('role="switch" aria-checked="false"');
     expect(renderToStaticMarkup(<CrossPromoModal t={t} name="Bolt Jam" tagline="Trie" onInstall={noop} onClose={noop} />)).toContain('Bolt Jam');
+  });
+
+  it('boucles de rétention : cadeau du jour, coffre, vies, nouveauté, niveau très difficile', () => {
+    const days = [[{ kind: 'coins' as const, amount: 50 }], [{ kind: 'undo' as const, amount: 1 }], [{ kind: 'coins' as const, amount: 300 }]];
+    const daily = renderToStaticMarkup(<DailyModal t={t} days={days} today={1} claimable onClaim={noop} onClose={noop} />);
+    expect(daily).toContain('jam-day--done');
+    expect(daily).toContain('jam-day--today');
+    expect(daily).toContain('Jour 3');
+    expect(renderToStaticMarkup(<DailyModal t={t} days={days} today={1} claimable={false} onClaim={noop} onClose={noop} />)).toMatch(/disabled[^>]*>.*Reviens demain/);
+    const chest = renderToStaticMarkup(<ChestModal t={t} items={[{ kind: 'coins', amount: 125 }, { kind: 'slot', amount: 1 }]} onCollect={noop} />);
+    expect(chest).toContain('+125');
+    expect(chest).toContain('×1');
+    const lives = renderToStaticMarkup(<NoLivesModal t={t} nextIn={90_000} refillCost={300} canPay={false} adReady onAd={noop} onPay={noop} onClose={noop} />);
+    expect(lives).toContain('1:30');
+    expect(lives).toMatch(/<button[^>]*disabled[^>]*>Toutes les vies/);
+    expect(renderToStaticMarkup(<IntroModal t={t} title="Vis renforcées" body="b" art={null} onOk={noop} />)).toContain('Nouveau !');
+    expect(renderToStaticMarkup(<SuperHardModal t={t} level={30} multiplier={3} onPlay={noop} />)).toContain('Récompense ×3');
+  });
+
+  it('victoire : détail des bonus ; near miss : rappel de la série', () => {
+    const win = renderToStaticMarkup(<WinModal t={t} reward={78} bonuses={['Niveau Très difficile : ×3', 'Série de 3 : +30 %']} adReady={false} onMultiply={noop} onContinue={noop} />);
+    expect(win).toContain('Série de 3 : +30 %');
+    const near = renderToStaticMarkup(
+      <NearMissModal t={t} remaining={2} secondsLeft={5} offerSeconds={10} continueCost={150} canPay adReady streak={4} onWatchAd={noop} onPay={noop} onGiveUp={noop} />,
+    );
+    expect(near).toContain('Ta série de 4 victoires sera perdue.');
   });
 });

@@ -92,6 +92,18 @@ describe('generateLevel', () => {
     expect(generateLevel('a', 11, params)).not.toEqual(generateLevel('a', 12, params));
   });
 
+  it('trap = 1 : la file réclame d’abord les couleurs les plus enfouies ; overlap resserre les planches', () => {
+    const spread = generateLevel('a', 5, { groups: 8, colors: 4, plates: 8, multiTapRate: 0, overlap: 0 });
+    const tight = generateLevel('a', 5, { groups: 8, colors: 4, plates: 8, multiTapRate: 0, overlap: 1 });
+    const extent = (l: typeof spread) => {
+      const xs = l.plates.flatMap((p) => p.polygon.map((q) => q.x));
+      return Math.max(...xs) - Math.min(...xs);
+    };
+    expect(extent(tight)).toBeLessThan(extent(spread));
+    const trapped = generateLevel('a', 9, { groups: 8, colors: 4, plates: 8, multiTapRate: 0, overlap: 1, trap: 1 });
+    expect(trapped.boxQueue.slice().sort()).toEqual(generateLevel('a', 9, { groups: 8, colors: 4, plates: 8, multiTapRate: 0, overlap: 1, trap: 0 }).boxQueue.slice().sort());
+  });
+
   it('respecte les invariants du niveau', () => {
     const def = generateLevel('a', 11, params);
     expect(def.screws).toHaveLength(18);

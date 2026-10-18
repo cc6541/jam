@@ -3,7 +3,6 @@ import { DEFAULT_RULES, engine, type GameState, type LevelDef, type StepResult }
 import { DEFAULT_UI_THEME } from '@jam/ui';
 import { GameSession, type BoardPort } from './game-session';
 import { completeLevel, grantCoins, grantPurchase, isAvailable, isOwned, newProfile, withDefaults, type Profile } from './profile';
-import { isHardLevel } from './difficulty';
 import { mockCatalog, mockPrice, PRODUCTS } from './products';
 import type { RemoteConfig } from '@jam/shell';
 import remote from '../config/remote-config.json';
@@ -125,6 +124,8 @@ describe('profil et achats', () => {
   it('réglages : complétés pour les anciennes sauvegardes, bonus d’écrous', () => {
     const { settings: _unused, ...old } = fresh();
     expect(withDefaults(old as Profile).settings).toEqual({ sound: true, haptics: true });
+    const { meta: _noMeta, ...older } = fresh();
+    expect(withDefaults(older as Profile).meta.lives.count).toBe(5);
     expect(withDefaults({ ...fresh(), settings: { sound: false, haptics: true } }).settings.sound).toBe(false);
     expect(grantCoins(fresh(), 40).wallet.coins).toBe(240);
     expect(grantCoins(fresh(), -5).wallet.coins).toBe(200);
@@ -140,12 +141,6 @@ describe('profil et achats', () => {
     expect(mockPrice(3.99, 'fr')).toContain('3,99');
     expect(mockPrice(3.99, 'en')).toBe('$3.99');
     expect(mockCatalog('en')).toHaveLength(PRODUCTS.length);
-  });
-});
-
-describe('badge Difficile', () => {
-  it('pics de fin de bloc, jamais pendant la prise en main', () => {
-    expect([...Array(40)].map((_, i) => i + 1).filter(isHardLevel)).toEqual([29, 30, 39, 40]);
   });
 });
 

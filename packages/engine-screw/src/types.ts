@@ -42,6 +42,19 @@ export interface LevelDef {
   /** File de boîtes, dans l'ordre d'apparition. */
   boxQueue: ColorId[];
   rules: LevelRules;
+  /** Métadonnées de design (ignorées par le moteur) : rôle dans la courbe et difficulté mesurée. */
+  meta?: LevelMeta;
+}
+
+/** Rôle du niveau dans le cycle de 10 (docs/GAME-DESIGN.md §3). */
+export type LevelTier = 'tutorial' | 'breather' | 'normal' | 'hard' | 'superHard';
+
+export interface LevelMeta {
+  tier: LevelTier;
+  /** Plus petit nombre de cases de toolbox avec lequel le niveau reste soluble (marge = toolboxSlots − minSlots). */
+  minSlots: number;
+  /** Part des parties perdues par un joueur naïf qui range toujours ce qui va dans une caisse (0 à 1). */
+  trapRate: number;
 }
 
 export interface LevelRules {

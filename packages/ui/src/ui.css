@@ -210,3 +210,56 @@
 @media (prefers-reduced-motion: reduce) {
   .jam-root *, .jam-root *::before, .jam-root *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
+
+/* ---------- Boucles de rétention ---------- */
+.jam-hard--super { background: linear-gradient(180deg, #ff5a5f, #b81d24); box-shadow: inset 0 -2px 0 #0003, 0 0 10px #ff3b3b88; }
+.jam-levelpill__tags { display: flex; gap: 4px; align-items: center; min-height: 0; }
+.jam-levelpill__tags:empty { display: none; }
+.jam-levelpill--superHard { box-shadow: inset 0 -4px 0 #f3b5b8, 0 0 0 3px #f0444b, 0 4px 14px #f0444b66; }
+.jam-levelpill--hard { box-shadow: inset 0 -4px 0 #f3c7b5, 0 0 0 2px #ff8a2a, 0 4px 10px #0b1a3333; }
+.jam-streak {
+  display: inline-flex; align-items: center; gap: 2px; padding: 1px 8px 1px 4px; border-radius: 999px;
+  background: linear-gradient(180deg, #fff3e0, #ffe0b8); color: #b5470a; font-size: .78rem; font-weight: 700; box-shadow: inset 0 -2px 0 #f5c08a;
+}
+.jam-lives {
+  display: inline-flex; align-items: center; gap: 4px; height: 40px; padding: 0 12px 0 2px; border: 0; border-radius: 999px; cursor: pointer;
+  background: linear-gradient(180deg, #0b1a3366, #0b1a3340); color: #fff; font: inherit; font-weight: 700; box-shadow: inset 0 2px 4px #0b1a3340;
+}
+.jam-lives__heart { position: relative; display: grid; place-items: center; margin-top: -4px; }
+.jam-lives__heart > span { position: absolute; inset: 0; display: grid; place-items: center; padding-top: 3px; font-size: .85rem; color: #fff; text-shadow: 0 1px 2px #6e1015; }
+.jam-lives__timer { font-size: .85rem; font-variant-numeric: tabular-nums; min-width: 3.4em; text-align: center; }
+.jam-home__top { gap: 8px; }
+.jam-home__streak { display: inline-flex; align-items: center; gap: 6px; margin: -6px 0 0; padding: 6px 14px; border-radius: 999px; background: #ffffffe6; color: #b5470a; font-weight: 700; box-shadow: inset 0 -3px 0 #f5c08a, 0 4px 10px #0b1a3326; }
+.jam-home__cards { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: min(360px, 100%); }
+.jam-progresscard { display: flex; align-items: center; gap: 8px; width: auto; padding: 10px 12px; }
+.jam-progresscard__body { display: grid; gap: 4px; flex: 1; min-width: 0; }
+.jam-progresscard__body strong, .jam-dailycard strong { font-size: .95rem; }
+.jam-progresscard__body small, .jam-dailycard small { color: var(--jam-muted); font-size: .75rem; }
+.jam-progress--card { margin: 0; height: 9px; background: var(--jam-surface-alt); }
+.jam-dailycard { display: flex; align-items: center; gap: 8px; width: auto; padding: 10px 12px; border: 0; font: inherit; text-align: left; cursor: pointer; }
+.jam-dailycard span { display: grid; gap: 2px; }
+.jam-dailycard--ready { animation: jam-glow 1.6s ease-in-out infinite; }
+.jam-dailycard--ready small { color: var(--jam-primary-dark); font-weight: 700; }
+@keyframes jam-glow { 50% { box-shadow: inset 0 -4px 0 #c9d9ee, 0 0 0 3px var(--jam-accent), 0 0 18px #ffc92899; } }
+.jam-bonuses { list-style: none; margin: 2px 0 0; padding: 0; display: grid; gap: 4px; justify-items: center; }
+.jam-bonuses li { padding: 2px 12px; border-radius: 999px; background: #fff3d6; color: #8a5a00; font-size: .85rem; font-weight: 700; }
+.jam-warn { display: flex; align-items: center; justify-content: center; gap: 6px; margin: 10px 0 0; padding: 6px 10px; border-radius: 12px; background: #fff0e3; color: #b5470a; font-size: .9rem; font-weight: 700; text-align: center; }
+.jam-rewards { list-style: none; margin: 4px 0 0; padding: 0; display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; }
+.jam-rewards__item { display: grid; justify-items: center; gap: 4px; min-width: 70px; padding: 10px 8px; border-radius: 16px; background: var(--jam-surface-alt); color: var(--jam-secondary-dark); font-size: 1.15rem; font-weight: 700; box-shadow: inset 0 -4px 0 #d5e1f0; animation: jam-pop .45s both cubic-bezier(.2, 1.6, .4, 1); }
+.jam-rewards__item:nth-child(2) { animation-delay: .12s; }
+.jam-rewards__item:nth-child(3) { animation-delay: .24s; }
+.jam-days { list-style: none; margin: 12px 0 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.jam-day { position: relative; display: grid; justify-items: center; gap: 2px; padding: 8px 4px; border-radius: 14px; background: var(--jam-surface-alt); color: var(--jam-secondary-dark); box-shadow: inset 0 -3px 0 #d5e1f0; font-weight: 700; }
+.jam-day__label { font-size: .68rem; color: var(--jam-muted); }
+.jam-day__amount { font-size: .85rem; }
+.jam-day--big { grid-column: span 2; background: linear-gradient(180deg, #fff6d6, #ffe7a0); box-shadow: inset 0 -3px 0 #f0cf6b; }
+.jam-day--done { opacity: .5; }
+.jam-day--done::after { content: "✓"; position: absolute; top: 4px; right: 6px; color: var(--jam-primary-dark); font-weight: 700; }
+.jam-day--today { background: #e6f9ec; box-shadow: inset 0 -3px 0 #a8e3bd, 0 0 0 3px var(--jam-primary); transform: scale(1.04); }
+.jam-hero--chest { animation: jam-chest .9s cubic-bezier(.2, 1.5, .4, 1) both; }
+@keyframes jam-chest { 0% { transform: scale(.4) rotate(-8deg); opacity: 0; } 60% { transform: scale(1.12) rotate(4deg); opacity: 1; } 100% { transform: none; } }
+.jam-hero__heart { position: relative; display: grid; place-items: center; }
+.jam-hero__heart b { position: absolute; inset: 0; display: grid; place-items: center; padding-top: 6px; color: #fff; font-size: 1.6rem; text-shadow: 0 2px 2px #6e1015; }
+.jam-skull { display: grid; place-items: center; width: 84px; height: 84px; border-radius: 26px; background: linear-gradient(180deg, #ff5a5f, #b81d24); color: #fff; font-size: 2.2rem; font-weight: 700; box-shadow: inset 0 -6px 0 #7e1217, 0 0 24px #f0444b99; animation: jam-pulse 1s ease-in-out infinite; }
+.jam-banner--superHard strong { color: #ffe0e0; text-shadow: 0 4px 0 #a8232a, 0 0 30px #f0444b; }
+.jam-banner--superHard span { background: linear-gradient(180deg, #ff5a5f, #b81d24); }

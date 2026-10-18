@@ -1,27 +1,83 @@
 import type { ReactNode } from 'react';
 import type { StringKey } from './i18n';
-import { AdIcon, BoosterGlyph, GearIcon, NutIcon, PlusIcon, ProductArt, ScrewArt, type BoosterIcon, type ProductIcon } from './icons';
+import {
+  AdIcon,
+  BoosterGlyph,
+  ChestIcon,
+  FlameIcon,
+  GearIcon,
+  GiftIcon,
+  HeartIcon,
+  NutIcon,
+  PlusIcon,
+  ProductArt,
+  ScrewArt,
+  type BoosterIcon,
+  type ProductIcon,
+} from './icons';
 import { Button, Modal, Switch } from './primitives';
 import { Swatch, type SwatchDef } from './swatch';
 
 type T = (key: StringKey, vars?: Record<string, string | number>) => string;
 
+/** Difficulté affichée d'un niveau (les rôles « respiration » et « prise en main » s'affichent comme normal). */
+export type Difficulty = 'normal' | 'hard' | 'superHard';
+
 const formatNumber = (n: number) => new Intl.NumberFormat().format(n);
+
+/** mm:ss pour les minuteurs (recharge des vies). */
+export const formatDuration = (ms: number) => {
+  const s = Math.max(0, Math.ceil(ms / 1000));
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+};
+
+export function DifficultyBadge({ t, difficulty, inline }: { t: T; difficulty: Difficulty; inline?: boolean }) {
+  if (difficulty === 'normal') return null;
+  return (
+    <span className={`jam-hard${difficulty === 'superHard' ? ' jam-hard--super' : ''}${inline ? ' jam-hard--inline' : ''}`}>
+      {difficulty === 'superHard' ? t('superHard') : t('hard')}
+    </span>
+  );
+}
+
+function CoinsButton({ t, coins, onShop }: { t: T; coins: number; onShop: () => void }) {
+  return (
+    <button type="button" className="jam-coins" onClick={onShop} aria-label={`${t('coins')}: ${coins}. ${t('addCoins')}`}>
+      <NutIcon size={24} />
+      <span className="jam-coins__value">{formatNumber(coins)}</span>
+      <span className="jam-coins__plus">
+        <PlusIcon size={14} />
+      </span>
+    </button>
+  );
+}
+
+export function StreakChip({ t, streak }: { t: T; streak: number }) {
+  if (streak < 1) return null;
+  return (
+    <span className="jam-streak" aria-label={`${t('streak')} : ${streak}`}>
+      <FlameIcon size={18} />
+      {streak}
+    </span>
+  );
+}
 
 // ---------- Jeu ----------
 
-/** Barre du haut : réglages, niveau (et badge « Difficile »), écrous avec accès boutique. */
+/** Barre du haut : réglages, niveau (badge de difficulté, série), écrous avec accès boutique. */
 export function TopBar({
   t,
   level,
-  hard,
+  difficulty = 'normal',
+  streak = 0,
   coins,
   onSettings,
   onShop,
 }: {
   t: T;
   level: number;
-  hard?: boolean;
+  difficulty?: Difficulty;
+  streak?: number;
   coins: number;
   onSettings: () => void;
   onShop: () => void;
@@ -31,19 +87,16 @@ export function TopBar({
       <button type="button" className="jam-iconbtn" onClick={onSettings} aria-label={t('settings')}>
         <GearIcon />
       </button>
-      <div className="jam-levelpill">
+      <div className={`jam-levelpill jam-levelpill--${difficulty}`}>
         <strong>
           {t('level')} {level}
         </strong>
-        {hard ? <span className="jam-hard">{t('hard')}</span> : null}
-      </div>
-      <button type="button" className="jam-coins" onClick={onShop} aria-label={`${t('coins')}: ${coins}. ${t('addCoins')}`}>
-        <NutIcon size={24} />
-        <span className="jam-coins__value">{formatNumber(coins)}</span>
-        <span className="jam-coins__plus">
-          <PlusIcon size={14} />
+        <span className="jam-levelpill__tags">
+          <DifficultyBadge t={t} difficulty={difficulty} />
+          <StreakChip t={t} streak={streak} />
         </span>
-      </button>
+      </div>
+      <CoinsButton t={t} coins={coins} onShop={onShop} />
     </header>
   );
 }
@@ -58,13 +111,13 @@ export function ProgressBar({ label, value }: { label: string; value: number }) 
 }
 
 /** Bannière d'entrée dans un niveau (l'app la retire après l'animation). */
-export function LevelBanner({ t, level, hard }: { t: T; level: number; hard?: boolean }) {
+export function LevelBanner({ t, level, difficulty = 'normal' }: { t: T; level: number; difficulty?: Difficulty }) {
   return (
-    <div className="jam-banner" aria-live="polite">
+    <div className={`jam-banner jam-banner--${difficulty}`} aria-live="polite">
       <strong>
         {t('level')} {level}
       </strong>
-      {hard ? <span>{t('hard')} !</span> : null}
+      {difficulty !== 'normal' ? <span>{difficulty === 'superHard' ? t('superHard') : t('hard')} !</span> : null}
     </div>
   );
 }
@@ -111,27 +164,65 @@ export function BoosterBar({ t, boosters, onBooster }: { t: T; boosters: Booster
 
 // ---------- Accueil ----------
 
+export interface LivesInfo {
+  count: number;
+  max: number;
+  /** ms avant la prochaine vie (0 si pleines). */
+  nextIn: number;
+}
+
+export function LivesPill({ t, lives, onClick }: { t: T; lives: LivesInfo; onClick?: () => void }) {
+  const full = lives.count >= lives.max;
+  return (
+    <button
+      type="button"
+      className="jam-lives"
+      onClick={onClick}
+      aria-label={`${t('lives')} : ${lives.count}/${lives.max}${full ? '' : `. ${t('livesNext', { t: formatDuration(lives.nextIn) })}`}`}
+    >
+      <span className="jam-lives__heart">
+        <HeartIcon size={30} />
+        <span>{lives.count}</span>
+      </span>
+      <span className="jam-lives__timer">{full ? t('livesFull') : formatDuration(lives.nextIn)}</span>
+    </button>
+  );
+}
+
 export function HomeScreen({
   t,
   title,
   nextLevel,
-  nextHard,
+  nextDifficulty = 'normal',
   coins,
+  lives,
+  streak,
+  chest,
+  dailyReady,
   swatches,
   onPlay,
   onShop,
   onSettings,
+  onLives,
+  onDaily,
   footer,
 }: {
   t: T;
   title: string;
   nextLevel: number;
-  nextHard?: boolean;
+  nextDifficulty?: Difficulty;
   coins: number;
+  lives: LivesInfo;
+  streak: number;
+  /** Avancement vers le prochain coffre. */
+  chest: { progress: number; every: number };
+  dailyReady: boolean;
   swatches: SwatchDef[];
   onPlay: () => void;
   onShop: () => void;
   onSettings: () => void;
+  onLives: () => void;
+  onDaily: () => void;
   footer?: ReactNode;
 }) {
   const words = title.split(' ');
@@ -142,13 +233,8 @@ export function HomeScreen({
         <button type="button" className="jam-iconbtn" onClick={onSettings} aria-label={t('settings')}>
           <GearIcon />
         </button>
-        <button type="button" className="jam-coins" onClick={onShop} aria-label={`${t('coins')}: ${coins}. ${t('addCoins')}`}>
-          <NutIcon size={24} />
-          <span className="jam-coins__value">{formatNumber(coins)}</span>
-          <span className="jam-coins__plus">
-            <PlusIcon size={14} />
-          </span>
-        </button>
+        <LivesPill t={t} lives={lives} onClick={onLives} />
+        <CoinsButton t={t} coins={coins} onShop={onShop} />
       </div>
 
       <h1 className="jam-logo">
@@ -161,15 +247,38 @@ export function HomeScreen({
         <span className="jam-logo__word jam-logo__word--accent">{last}</span>
       </h1>
 
+      {streak > 0 ? (
+        <p className="jam-home__streak">
+          <FlameIcon size={22} /> {t('streakBonus', { n: streak, p: Math.min(streak, 5) * 10 })}
+        </p>
+      ) : null}
+
+      <div className="jam-home__cards">
+        <div className="jam-card jam-progresscard" aria-label={`${t('chest')} : ${t('chestProgress', { n: chest.progress, max: chest.every })}`}>
+          <ChestIcon size={42} />
+          <div className="jam-progresscard__body">
+            <strong>{t('chest')}</strong>
+            <div className="jam-progress jam-progress--card">
+              <div className="jam-progress__fill" style={{ width: `${(chest.progress / chest.every) * 100}%` }} />
+            </div>
+            <small>{t('chestProgress', { n: chest.progress, max: chest.every })}</small>
+          </div>
+        </div>
+        <button type="button" className={`jam-card jam-dailycard${dailyReady ? ' jam-dailycard--ready' : ''}`} onClick={onDaily}>
+          <GiftIcon size={42} />
+          <span>
+            <strong>{t('daily')}</strong>
+            <small>{dailyReady ? t('dailyReady') : t('dailyCome')}</small>
+          </span>
+        </button>
+      </div>
+
       <div className="jam-home__cta">
         <Button size="lg" onClick={onPlay}>
           <span className="jam-cta__label">
             {t('level')} {nextLevel}
           </span>
-          {nextHard ? <span className="jam-hard jam-hard--inline">{t('hard')}</span> : null}
-        </Button>
-        <Button variant="secondary" onClick={onShop}>
-          {t('shop')}
+          <DifficultyBadge t={t} difficulty={nextDifficulty} inline />
         </Button>
       </div>
 
@@ -260,6 +369,7 @@ export function NearMissModal({
   onWatchAd,
   onPay,
   onGiveUp,
+  streak,
 }: {
   t: T;
   remaining: number;
@@ -271,6 +381,8 @@ export function NearMissModal({
   onWatchAd: () => void;
   onPay: () => void;
   onGiveUp: () => void;
+  /** Série en cours : rappelée car elle sera perdue (aversion à la perte). */
+  streak?: number;
 }) {
   return (
     <Modal title={t('nearMissTitle')} tone="gold">
@@ -280,6 +392,11 @@ export function NearMissModal({
         </span>
       </div>
       <p className="jam-lead">{t('nearMissBody', { n: remaining })}</p>
+      {streak && streak >= 2 ? (
+        <p className="jam-warn">
+          <FlameIcon size={20} /> {t('streakWarn', { n: streak })}
+        </p>
+      ) : null}
       <div
         className="jam-timer"
         role="progressbar"
@@ -309,6 +426,7 @@ export function WinModal({
   t,
   reward,
   multiplier = 3,
+  bonuses = [],
   adReady,
   onMultiply,
   onContinue,
@@ -316,6 +434,8 @@ export function WinModal({
   t: T;
   reward: number;
   multiplier?: number;
+  /** Détail des bonus appliqués (rôle du niveau, série) : le joueur voit pourquoi il gagne plus. */
+  bonuses?: string[];
   adReady: boolean;
   onMultiply: () => void;
   onContinue: () => void;
@@ -326,6 +446,13 @@ export function WinModal({
         <NutIcon size={46} />
         <span>+{reward}</span>
       </div>
+      {bonuses.length > 0 ? (
+        <ul className="jam-bonuses">
+          {bonuses.map((b) => (
+            <li key={b}>{b}</li>
+          ))}
+        </ul>
+      ) : null}
       <div className="jam-modal__actions jam-modal__actions--stack">
         {adReady ? (
           <Button variant="gold" onClick={onMultiply}>

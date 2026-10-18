@@ -123,3 +123,47 @@ export function ScrewArt({ color = '#ffc928', size = 64 }: { color?: string; siz
     </svg>
   );
 }
+
+export function HeartIcon({ size = 24 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" className="jam-icon">
+      <path d="M12 21s-7.5-4.6-9.6-9.2C.9 8.4 3 4.5 6.7 4.5c2.1 0 3.6 1.2 4.3 2.5h2c.7-1.3 2.2-2.5 4.3-2.5 3.7 0 5.8 3.9 4.3 7.3C19.5 16.4 12 21 12 21Z" fill="#f0444b" stroke="#a8232a" strokeWidth="1.2" />
+      <ellipse cx="7.6" cy="8.6" rx="2.4" ry="1.4" fill="#fff" opacity=".55" transform="rotate(-30 7.6 8.6)" />
+    </svg>
+  );
+}
+
+export function FlameIcon({ size = 22 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" className="jam-icon">
+      <path d="M12 22c-4.4 0-7.5-3-7.5-7 0-3.4 2.4-5.6 4-7.6.6 1.6 1.4 2.6 2.6 3.1C11 7.3 12.3 4.2 15 2c-.2 3 1.5 4.9 3 6.9 1.2 1.6 1.5 3.2 1.5 4.9 0 4.6-3.1 8.2-7.5 8.2Z" fill="#ff8a2a" stroke="#c4500a" strokeWidth="1.2" />
+      <path d="M12 21c-2.2 0-3.7-1.5-3.7-3.6 0-1.9 1.4-3 2.4-4.4.5 1 1 1.6 1.8 1.9.4-1.3 1.1-2.3 2.1-3 0 1.6.6 2.6 1.2 3.6.4.7.6 1.3.6 2 0 2-1.9 3.5-4.4 3.5Z" fill="#ffd34d" />
+    </svg>
+  );
+}
+
+export function ChestIcon({ size = 44 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 48 48" aria-hidden="true" className="jam-icon">
+      <ellipse cx="24" cy="43" rx="17" ry="3" fill="#0b1a33" opacity=".2" />
+      <path d="M6 20h36v19a3 3 0 0 1-3 3H9a3 3 0 0 1-3-3Z" fill="#b0652c" stroke="#5e3112" strokeWidth="1.6" />
+      <path d="M6 20c0-7 6-12 18-12s18 5 18 12Z" fill="#cf8240" stroke="#5e3112" strokeWidth="1.6" />
+      <path d="M6 20h36v5H6z" fill="#ffc928" stroke="#9c6c00" strokeWidth="1.4" />
+      <path d="M13 9.5v32M35 9.5v32" stroke="#ffc928" strokeWidth="3" />
+      <rect x="20" y="19" width="8" height="10" rx="2" fill="#ffe27a" stroke="#9c6c00" strokeWidth="1.4" />
+      <circle cx="24" cy="24" r="1.6" fill="#6e4b00" />
+      <path d="M10 14c3-3 8-4.5 14-4.5" stroke="#fff" strokeOpacity=".45" strokeWidth="2" fill="none" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function GiftIcon({ size = 40 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 48 48" aria-hidden="true" className="jam-icon">
+      <rect x="7" y="20" width="34" height="22" rx="4" fill="#2fbf63" stroke="#1d7a3f" strokeWidth="1.6" />
+      <rect x="5" y="14" width="38" height="9" rx="3" fill="#4fd681" stroke="#1d7a3f" strokeWidth="1.6" />
+      <rect x="21" y="14" width="6" height="28" fill="#ffc928" />
+      <path d="M24 14c-4-8-13-6-9 0M24 14c4-8 13-6 9 0" fill="none" stroke="#ffc928" strokeWidth="3.5" strokeLinecap="round" />
+    </svg>
+  );
+}
