@@ -1,3 +1,5 @@
+// Pixi sans eval : compatible CSP stricte (démo hébergée, WebView durci).
+import 'pixi.js/unsafe-eval';
 import { createRoot } from 'react-dom/client';
 import '@jam/ui/src/ui.css';
 import './app.css';

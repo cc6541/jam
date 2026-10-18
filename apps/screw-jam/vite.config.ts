@@ -5,5 +5,6 @@ import { defineConfig } from 'vite';
 export default defineConfig({
   base: './',
   plugins: [react()],
-  build: { target: 'es2022' },
+  // Un seul fichier JS : plus simple à embarquer (Capacitor) et à publier tel quel en démo.
+  build: { target: 'es2022', rollupOptions: { output: { inlineDynamicImports: true } } },
 });
