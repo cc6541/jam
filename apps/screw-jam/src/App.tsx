@@ -1,6 +1,6 @@
 import { storeLink, localized, pickPromo, recordShown, type PromoApp } from '@jam/cross-promo';
 import type { Id } from '@jam/engine-screw';
-import { BoardView, DEFAULT_THEME as PIXI_THEME, vibrateHaptics, type HapticsPort } from '@jam/render-pixi';
+import { BoardView, DEFAULT_THEME as PIXI_THEME, vibrateHaptics, woodTexture, type HapticsPort } from '@jam/render-pixi';
 import { coinMultiplier, shouldShowInterstitial, spend, useBooster, type BoosterId } from '@jam/shell';
 import {
   BoosterBar,
@@ -115,6 +115,12 @@ export function App({ s }: { s: Services }) {
     return () => document.removeEventListener('visibilitychange', flush);
   }, [s, params, show, config.economy.levelReward, setModal, sounds]);
 
+  // Texture de bois générée pendant que le joueur est sur l'accueil : pas d'à-coup au lancement du premier niveau.
+  useEffect(() => {
+    const id = setTimeout(() => woodTexture(), 300);
+    return () => clearTimeout(id);
+  }, []);
+
   // ---------- Fin de partie ----------
 
   const onEnd = useCallback(
@@ -169,7 +175,12 @@ export function App({ s }: { s: Services }) {
       });
       view = board;
       a.stage.addChild(board.root);
-      a.ticker.add((ticker) => board.update(ticker.deltaMS));
+      // Rendu à la demande : une scène immobile n'est pas redessinée (batterie, chauffe).
+      a.ticker.remove(a.render, a);
+      a.ticker.add((ticker) => {
+        board.update(ticker.deltaMS);
+        if (board.takeDirty()) a.render();
+      });
       const onResize = () => board.resize({ width: a.screen.width, height: a.screen.height });
       window.addEventListener('resize', onResize);
       a.renderer.on('resize', onResize);

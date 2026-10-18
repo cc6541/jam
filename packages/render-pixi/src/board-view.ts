@@ -1,11 +1,11 @@
 // Vue Pixi du plateau. Elle affiche un GameState et anime les Cue du director :
 // aucune règle de jeu ici, l'état d'après fait toujours foi (sync en fin d'animation).
-import { Circle, Container, Graphics, Sprite, Text, type Renderer, type Texture } from 'pixi.js';
-import type { ColorId, GameState, Id, Point, StepResult } from '@jam/engine-screw';
+import { Circle, Container, Graphics, Polygon, Sprite, Text, type Renderer, type Texture } from 'pixi.js';
+import { selectors, type ColorId, type GameState, type Id, type Point, type StepResult } from '@jam/engine-screw';
 import { direct, rejectedTapCues, type Cue, type Target } from './director';
 import { silentHaptics, type HapticsPort } from './haptics';
 import { boxScrewCenter, computeLayout, crateSize, slotCenter, toScreen, type Layout, type Rect } from './layout';
-import { centroid, crateBody, crateLid, lockedSlots, matGraphic, plateGraphic, screwHead, screwShadow, trayGraphic } from './skin';
+import { centroid, Painter, type Painted } from './paint';
 import { silentSound, type SoundPort } from './sound';
 import { DEFAULT_THEME, type Theme } from './theme';
 import { easings, TweenRunner } from './tween';
@@ -24,11 +24,14 @@ interface ScrewNode {
   shadow: Sprite;
   badge?: Container;
   label?: Text;
+  color: ColorId;
+  /** Dernier état affiché : une vis qui se libère reprend sa couleur avec un « pop ». */
+  blocked: boolean;
 }
 
 interface Crate {
   node: Container;
-  lid: Graphics;
+  lid: Container;
   color: ColorId;
   rect: Rect;
 }
@@ -39,7 +42,6 @@ const ENTER = 280;
 
 export class BoardView {
   readonly root = new Container();
-  private readonly matLayer = new Container();
   private readonly trayLayer = new Container();
   private readonly plateLayer = new Container({ sortableChildren: true });
   private readonly boxLayer = new Container();
@@ -52,17 +54,18 @@ export class BoardView {
   private readonly theme: Theme;
   private readonly haptics: HapticsPort;
   private readonly sounds: SoundPort;
-  private readonly textures = new Map<ColorId, Texture>();
-  private shadowTexture: Texture | undefined;
+  private painter: Painter | undefined;
   private confettiTexture: Texture | undefined;
   private readonly screws = new Map<Id, ScrewNode>();
   private readonly plates = new Map<Id, Container>();
   /** Centre de chaque plaque : pivot de la chute (elle tourne sur elle-même). */
   private readonly plateHome = new Map<Id, Point>();
-  private lockLayer = new Graphics();
+  private lockLayer = new Container();
   private boxes: Crate[] = [];
   private layout?: Layout;
   private state?: GameState;
+  /** Quelque chose a changé depuis la dernière image : il faut redessiner. */
+  private dirty = true;
   private viewport = { width: 0, height: 0 };
 
   constructor(
@@ -72,11 +75,23 @@ export class BoardView {
     this.theme = options.theme ?? DEFAULT_THEME;
     this.haptics = options.haptics ?? silentHaptics;
     this.sounds = options.sounds ?? silentSound;
-    this.root.addChild(this.matLayer, this.trayLayer, this.plateLayer, this.boxLayer, this.overlay, this.fxLayer);
+    this.root.addChild(this.trayLayer, this.plateLayer, this.boxLayer, this.overlay, this.fxLayer);
   }
 
   get animating(): boolean {
     return this.runner.busy;
+  }
+
+  /**
+   * Rendu à la demande : vrai si l'image doit être redessinée (animation en cours ou changement depuis la dernière).
+   * Une scène immobile n'est pas redessinée : économie de batterie et de chauffe sur mobile.
+   */
+  takeDirty(): boolean {
+    const busy = this.runner.busy || this.fx.busy;
+    const dirty = this.dirty || busy;
+    // Une image de plus après la fin d'une animation pour afficher son état final.
+    this.dirty = busy;
+    return dirty;
   }
 
   /** Construit la scène pour un niveau (nouvelle partie, rejouer, undo). */
@@ -94,6 +109,7 @@ export class BoardView {
 
   /** Avance les animations ; à brancher sur le ticker de l'app. */
   update(deltaMs: number): void {
+    if (this.runner.busy || this.fx.busy) this.dirty = true;
     this.runner.tick(deltaMs);
     this.fx.tick(deltaMs);
   }
@@ -101,6 +117,7 @@ export class BoardView {
   /** Anime le résultat d'un `step`. `tapped` : vis visée, pour secouer une vis bloquée. */
   apply(result: StepResult, tapped?: Id): void {
     if (!this.state) return;
+    this.dirty = true;
     this.runner.finishAll();
     if (result.state === this.state) {
       if (tapped) this.schedule(rejectedTapCues(tapped, result.events));
@@ -117,20 +134,19 @@ export class BoardView {
   destroy(): void {
     this.runner.finishAll();
     this.fx.finishAll();
-    for (const t of this.textures.values()) t.destroy(true);
-    this.shadowTexture?.destroy(true);
+    this.painter?.destroy();
     this.confettiTexture?.destroy(true);
     this.root.destroy({ children: true });
   }
 
   // ---------- Construction ----------
 
-  /** Fige un décor statique en une seule texture : un sprite par image au lieu de centaines de tracés et de masques. */
-  private bake<T extends Container>(node: T): T {
-    // Densité réelle de l'écran : sur un mobile 2x/3x les bords sont lisses sans antialiasing coûteux.
-    const resolution = this.renderer.resolution;
-    node.cacheAsTexture({ resolution, antialias: resolution < 2 });
-    return node;
+  /** Sprite d'une texture peinte, en coordonnées logiques. */
+  private sprite(p: Painted): Sprite {
+    const sprite = new Sprite(p.texture);
+    sprite.position.set(p.x, p.y);
+    sprite.scale.set(this.painter?.spriteScale ?? 1);
+    return sprite;
   }
 
   private build(): void {
@@ -139,34 +155,35 @@ export class BoardView {
     const layout = computeLayout(state.level, this.viewport);
     this.layout = layout;
     for (const crate of this.boxes) this.releaseScrews(crate.node);
-    for (const layer of [this.matLayer, this.trayLayer, this.plateLayer, this.boxLayer, this.overlay]) {
+    for (const layer of [this.trayLayer, this.plateLayer, this.boxLayer, this.overlay]) {
       layer.removeChildren().forEach((c) => c.destroy({ children: true }));
     }
-    for (const t of this.textures.values()) t.destroy(true);
-    this.textures.clear();
-    this.shadowTexture?.destroy(true);
-    this.shadowTexture = undefined;
+    this.painter?.destroy();
+    const painter = new Painter(Math.min(3, Math.max(1, this.renderer.resolution)), this.theme);
+    this.painter = painter;
     this.screws.clear();
     this.plates.clear();
     this.plateHome.clear();
     this.boxes = [];
     const r = layout.screwRadius;
 
-    this.matLayer.addChild(this.bake(matGraphic(layout.board, this.theme)));
-    this.trayLayer.addChild(this.bake(trayGraphic(layout, this.theme, state.level.rules.toolboxMaxSlots)));
-    this.lockLayer = new Graphics();
+    this.trayLayer.addChild(this.sprite(painter.tray(layout, state.level.rules.toolboxMaxSlots)));
+    this.lockLayer = new Container();
     this.trayLayer.addChild(this.lockLayer);
 
     const ranks = [...new Set(state.level.plates.map((p) => p.z))].sort((a, b) => a - b);
     for (const plate of state.level.plates) {
       const points = plate.polygon.map((p) => toScreen(layout, p));
       const holes = state.level.screws.filter((s) => s.pins.includes(plate.id)).map((s) => toScreen(layout, s.at));
-      const g = this.bake(plateGraphic(points, ranks.indexOf(plate.z), this.theme, holes, r * 1.08));
+      const g = new Container();
+      g.addChild(this.sprite(painter.plate(points, ranks.indexOf(plate.z), holes, r * 1.1)));
       const home = centroid(points);
       g.pivot.set(home.x, home.y);
       g.position.set(home.x, home.y);
       g.zIndex = plate.z * 2;
-      g.eventMode = 'none';
+      // Planche opaque et « pleine » : un tap sur elle ne traverse pas jusqu'aux vis cachées dessous.
+      g.eventMode = 'static';
+      g.hitArea = new Polygon(points.flatMap((p) => [p.x, p.y]));
       this.plates.set(plate.id, g);
       this.plateHome.set(plate.id, home);
       this.plateLayer.addChild(g);
@@ -174,13 +191,15 @@ export class BoardView {
 
     for (const def of state.level.screws) {
       const node = new Container();
-      const shadow = new Sprite(this.shadow());
+      const shadow = new Sprite(painter.screwShadow(r));
       shadow.anchor.set(0.5);
+      shadow.scale.set(painter.spriteScale);
       shadow.position.set(r * 0.12, r * 0.24);
-      const head = new Sprite(this.screwTexture(def.color));
+      const head = new Sprite(this.screwTexture(def.color, false));
       head.anchor.set(0.5);
+      head.scale.set(painter.spriteScale);
       node.addChild(shadow, head);
-      const screw: ScrewNode = { node, head, shadow };
+      const screw: ScrewNode = { node, head, shadow, color: def.color, blocked: false };
       if (def.kind.type === 'multiTap') {
         const badge = new Container();
         const label = new Text({
@@ -202,25 +221,10 @@ export class BoardView {
     }
   }
 
-  private screwTexture(color: ColorId): Texture {
-    const cached = this.textures.get(color);
-    if (cached) return cached;
-    const g = new Graphics();
-    screwHead(g, this.layout?.screwRadius ?? 14, this.theme.screws[color]);
-    const texture = this.renderer.generateTexture({ target: g, resolution: Math.max(3, this.renderer.resolution), antialias: true });
-    g.destroy();
-    this.textures.set(color, texture);
-    return texture;
-  }
-
-  private shadow(): Texture {
-    if (!this.shadowTexture) {
-      const g = new Graphics();
-      screwShadow(g, this.layout?.screwRadius ?? 14);
-      this.shadowTexture = this.renderer.generateTexture({ target: g, resolution: Math.max(2, this.renderer.resolution) });
-      g.destroy();
-    }
-    return this.shadowTexture;
+  private screwTexture(color: ColorId, blocked: boolean): Texture {
+    const painter = this.painter;
+    if (!painter) throw new Error('BoardView : peintre absent (load non appelé)');
+    return painter.screw(this.theme.screws[color], this.layout?.screwRadius ?? 14, blocked);
   }
 
   private confetti(): Texture {
@@ -237,6 +241,7 @@ export class BoardView {
   private sync(state: GameState): void {
     const layout = this.layout;
     if (!layout) return;
+    this.dirty = true;
     this.state = state;
     const r = layout.screwRadius;
 
@@ -281,6 +286,11 @@ export class BoardView {
         node.position.set(at.x, at.y);
         node.visible = true;
         node.eventMode = 'static';
+        // Vis bloquée : grisée (le motif reste lisible) ; cachée tout entière si une planche opaque la recouvre.
+        const blocked = selectors.isScrewBlocked(state, id);
+        head.texture = this.screwTexture(s.color, blocked);
+        if (s.blocked && !blocked) this.unlockPop(node);
+        s.blocked = blocked;
         if (badge && label) {
           badge.visible = onBoard.tapsLeft > 1;
           label.text = String(onBoard.tapsLeft);
@@ -289,6 +299,8 @@ export class BoardView {
       }
       node.eventMode = 'none';
       if (badge) badge.visible = false;
+      if (s.blocked) head.texture = this.screwTexture(s.color, false);
+      s.blocked = false;
       const home = homes.get(id);
       node.visible = home !== undefined;
       if (home) {
@@ -319,9 +331,30 @@ export class BoardView {
   }
 
   private drawLocks(state: GameState, layout: Layout): void {
-    this.lockLayer.destroy();
-    this.lockLayer = lockedSlots(layout, this.theme, state.toolboxSlots, state.level.rules.toolboxMaxSlots);
-    this.trayLayer.addChild(this.lockLayer);
+    const painter = this.painter;
+    if (!painter) return;
+    this.lockLayer.removeChildren().forEach((c) => c.destroy());
+    const max = state.level.rules.toolboxMaxSlots;
+    for (let i = state.toolboxSlots; i < max; i++) {
+      const lock = new Sprite(painter.lockedSlot(layout.screwRadius));
+      lock.anchor.set(0.5);
+      lock.scale.set(painter.spriteScale);
+      const at = slotCenter(layout.toolbox, i, max);
+      lock.position.set(at.x, at.y);
+      this.lockLayer.addChild(lock);
+    }
+  }
+
+  /** Une vis qui vient d'être libérée rebondit légèrement en reprenant sa couleur. */
+  private unlockPop(node: Container): void {
+    this.fx.add({
+      delay: 0,
+      duration: 260,
+      easing: easings.linear,
+      update: (t) => {
+        if (!node.destroyed) node.scale.set(1 + 0.18 * Math.sin(Math.PI * t));
+      },
+    });
   }
 
   private drawBoxes(state: GameState, layout: Layout): void {
@@ -343,16 +376,20 @@ export class BoardView {
     const size = crateSize(layout, count, capacity);
     const rect = { x: center.x - size.width / 2, y: center.y - size.height / 2, width: size.width, height: size.height };
     const holes = Array.from({ length: capacity }, (_, slot) => boxScrewCenter(layout, index, count, slot, capacity));
-    node.addChild(this.bake(crateBody(rect, this.theme.screws[color].fill, holes, layout.screwRadius * 1.08, this.theme)));
+    const painter = this.painter;
+    if (!painter) throw new Error('BoardView : peintre absent (load non appelé)');
+    const fill = this.theme.screws[color].fill;
+    node.addChild(this.sprite(painter.crate(rect, fill, holes, layout.screwRadius * 1.1)));
     for (const at of holes) {
-      const ghost = new Sprite(this.screwTexture(color));
+      const ghost = new Sprite(this.screwTexture(color, false));
       ghost.anchor.set(0.5);
-      ghost.alpha = 0.3;
-      ghost.scale.set(0.82);
+      ghost.alpha = 0.45;
+      ghost.scale.set(0.82 * painter.spriteScale);
       ghost.position.set(at.x, at.y);
       node.addChild(ghost);
     }
-    const lid = crateLid(rect, this.theme.screws[color].fill);
+    const lid = new Container();
+    lid.addChild(this.sprite(painter.lid(rect, fill)));
     lid.alpha = 0;
     node.addChild(lid);
     return { node, lid, color, rect };

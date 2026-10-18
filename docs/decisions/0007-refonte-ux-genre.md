@@ -30,3 +30,13 @@ App, niveau 91 : ~46 fps moyens, 1 % bas ~30. **Mesure sur Android d'entrée de 
 
 ## Reste hors périmètre
 Illustrations raster (personnage, décors peints), musique, effets de particules avancés : demandent un artiste.
+
+## Mise à jour — vis cachées et rendu peint (2026-10-18)
+- **Vis sous une planche** : les planches sont opaques ; une vis bloquée qui dépasse est **grisée** (son motif reste
+  lisible, donc sa couleur aussi) et reprend sa couleur avec un petit rebond quand elle se libère. Les planches captent
+  les taps : toucher une planche ne déclenche plus une vis cachée dessous.
+- **Rendu peint en Canvas 2D** (`render-pixi/src/paint.ts`) : bois procédural raccordable (bruit fractal périodique),
+  planches épaisses avec chant, biseau et ombre douce floutée, trous creusés, vis en dôme avec reflet et motif gravé,
+  caisses en plastique brillant avec couvercle, bac à alvéoles. Peint une fois par niveau, affiché en sprites.
+- **Rendu à la demande** : la scène n'est redessinée que pendant les animations (batterie, chauffe). Mesures en rendu
+  logiciel : 60 fps immobile, ~45 fps en animation continue sur le niveau le plus chargé.

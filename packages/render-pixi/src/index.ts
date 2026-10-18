@@ -2,5 +2,6 @@ export { BoardView, type BoardViewOptions } from './board-view';
 export { direct, rejectedTapCues, TIMING, type Cue, type Target } from './director';
 export { silentHaptics, vibrateHaptics, type HapticCue, type HapticsPort } from './haptics';
 export { silentSound, type SoundId, type SoundPort } from './sound';
+export { woodTexture } from './paint';
 export { computeLayout, contentBounds, type Layout } from './layout';
 export { DEFAULT_THEME, type Material, type Theme, type ScrewStyle } from './theme';

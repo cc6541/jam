@@ -47,8 +47,11 @@ function start(auto = false): void {
 // fps : fenêtre glissante des 600 dernières frames.
 const frames: number[] = [];
 let sinceAuto = 0;
+// Rendu à la demande, comme dans l'app : la scène n'est redessinée que si elle change.
+app.ticker.remove(app.render, app);
 app.ticker.add((ticker) => {
   view.update(ticker.deltaMS);
+  if (view.takeDirty()) app.render();
   frames.push(ticker.deltaMS);
   if (frames.length > 600) frames.shift();
   sinceAuto += ticker.deltaMS;
