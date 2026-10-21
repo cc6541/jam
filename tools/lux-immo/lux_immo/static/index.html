@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Maisons Luxembourg</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--fg:#1c2330;--mut:#667085;--acc:#2457d6;--ok:#1a7f4b;--warn:#b54708;--bd:#e3e6ec}
+@media(prefers-color-scheme:dark){:root{--bg:#12151b;--card:#1b2029;--fg:#e8ebf1;--mut:#9aa4b5;--acc:#6b9bff;--ok:#4ac98a;--warn:#f0a35e;--bd:#2a313d}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.4 system-ui,sans-serif}
+header{position:sticky;top:0;z-index:5;background:var(--card);border-bottom:1px solid var(--bd);padding:12px 16px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}h1{font-size:18px;margin:0 12px 0 0}
+input,select,button{font:inherit;padding:6px 10px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--fg)}
+button.p{background:var(--acc);color:#fff;border-color:var(--acc);cursor:pointer}button:disabled{opacity:.6}
+label{color:var(--mut);display:flex;gap:4px;align-items:center}
+#st{color:var(--mut);font-size:13px;margin-top:6px}
+main{padding:16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:14px}
+.c{background:var(--card);border:1px solid var(--bd);border-radius:12px;overflow:hidden;display:flex;flex-direction:column}
+.c.off{opacity:.55}.c img{width:100%;height:170px;object-fit:cover;background:var(--bd)}
+.b{padding:12px;display:flex;flex-direction:column;gap:4px;flex:1}.pr{font-size:20px;font-weight:700}
+.m{color:var(--mut);font-size:13px}.t{font-weight:600}
+.tag{font-size:11px;padding:2px 7px;border-radius:99px;border:1px solid var(--bd);margin-right:4px}
+.new{color:var(--ok);border-color:var(--ok)}.drop{color:var(--warn);border-color:var(--warn)}
+.act{display:flex;gap:8px;margin-top:auto;padding-top:8px}a{color:var(--acc);text-decoration:none}
+.act button{cursor:pointer;padding:3px 8px}
+</style></head><body>
+<header>
+ <div class="row"><h1>🏠 Maisons · Luxembourg</h1>
+  <button class="p" id="rf">Actualiser</button>
+  <input id="q" placeholder="Recherche (commune, texte…)" size="22">
+  <select id="src"><option value="">Toutes sources</option></select>
+  <input id="mx" type="number" placeholder="Prix max €" style="width:120px">
+  <input id="ms" type="number" placeholder="m² min" style="width:90px">
+  <select id="so"><option value="new">Plus récentes</option><option value="pa">Prix ↑</option><option value="pd">Prix ↓</option><option value="ppm">€/m² ↑</option></select>
+  <label><input type="checkbox" id="fn">Nouvelles (7 j)</label>
+  <label><input type="checkbox" id="ff">Favoris</label>
+  <label><input type="checkbox" id="fi">Retirées</label>
+  <span id="cnt" class="m"></span></div>
+ <div id="st"></div>
+</header>
+<main id="m"></main>
+<script>
+let L=[];const $=id=>document.getElementById(id);
+const eur=n=>n==null?"—":n.toLocaleString("fr-LU")+" €";
+const esc=s=>(s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const safe=u=>/^https?:\/\//.test(u||"")?u:"#";
+async function load(){L=await (await fetch("/api/listings")).json();
+ const s=[...new Set(L.map(l=>l.source))].sort(),cur=$("src").value;
+ $("src").innerHTML='<option value="">Toutes sources</option>'+s.map(x=>`<option ${x==cur?"selected":""}>${esc(x)}</option>`).join("");render()}
+function render(){const q=$("q").value.toLowerCase(),sr=$("src").value,mx=+$("mx").value,ms=+$("ms").value,now=Date.now()/1000;
+ let r=L.filter(l=>(l.active||$("fi").checked)&&(!sr||l.source==sr)&&(!mx||(l.price&&l.price<=mx))&&(!ms||(l.surface&&l.surface>=ms))
+  &&(!q||(l.title+" "+l.location+" "+l.url).toLowerCase().includes(q))&&(!$("fn").checked||now-l.first_seen<7*864e2)&&(!$("ff").checked||l.favorite));
+ const ppm=l=>l.price&&l.surface?l.price/l.surface:1e12,so=$("so").value;
+ r.sort((a,b)=>so=="pa"?(a.price||1e12)-(b.price||1e12):so=="pd"?(b.price||0)-(a.price||0):so=="ppm"?ppm(a)-ppm(b):b.first_seen-a.first_seen);
+ $("cnt").textContent=r.length+" annonce(s)";
+ $("m").innerHTML=r.map(l=>{const nw=now-l.first_seen<3*864e2,dr=l.prev_price&&l.price<l.prev_price;
+ return `<div class="c ${l.active?"":"off"}">${l.image?`<img loading="lazy" src="${esc(safe(l.image))}" alt="">`:"<img alt=''>"}
+ <div class="b"><div class="pr">${eur(l.price)}</div><div class="t">${esc(l.title)||"Maison"}</div>
+ <div class="m">${esc(l.location)||"Lieu non précisé"}${l.surface?" · "+Math.round(l.surface)+" m²":""}${l.bedrooms!=null?" · "+l.bedrooms+" ch.":""}${l.price&&l.surface?` · ${Math.round(l.price/l.surface).toLocaleString("fr-LU")} €/m²`:""}</div>
+ <div><span class="tag">${esc(l.source)}</span>${nw?'<span class="tag new">Nouveau</span>':""}${dr?`<span class="tag drop">Baisse (avant ${eur(l.prev_price)})</span>`:""}${l.active?"":'<span class="tag">Retirée</span>'}</div>
+ <div class="act"><a href="${esc(safe(l.url))}" target="_blank" rel="noopener noreferrer">Voir l'annonce ↗</a>
+ <button onclick="fl('${l.uid}','favorite',${l.favorite?0:1})">${l.favorite?"★":"☆"}</button>
+ <button onclick="fl('${l.uid}','hidden',1)" title="Masquer">✕</button></div></div></div>`}).join("")}
+async function fl(uid,field,value){await fetch("/api/flag",{method:"POST",body:JSON.stringify({uid,field,value})});
+ const l=L.find(x=>x.uid==uid);if(field=="hidden")L=L.filter(x=>x!==l);else l[field]=value;render()}
+let poll;async function status(){const s=await (await fetch("/api/status")).json();
+ $("rf").disabled=s.running;$("rf").textContent=s.running?"Actualisation…":"Actualiser";
+ const lr=s.last_run;let t=lr?"Dernière mise à jour : "+new Date(lr.finished*1000).toLocaleString("fr-FR"):"Jamais actualisé — cliquez sur Actualiser";
+ if(lr){const r=JSON.parse(lr.report),n=Object.values(r).reduce((a,x)=>a+x.new,0),e=Object.entries(r).filter(([,x])=>x.errors.length||!x.kept).map(([k])=>k);
+  t+=` · ${n} nouvelle(s)`+(e.length?` · ⚠ sources sans résultat : ${e.join(", ")}`:"")}
+ if(s.running)t=s.log.slice(-1)[0]||"Démarrage…";$("st").textContent=t;
+ if(s.running){poll=setTimeout(status,1500)}else if(poll){poll=null;load()}}
+$("rf").onclick=async()=>{await fetch("/api/refresh",{method:"POST"});poll=1;status()};
+["q","src","mx","ms","so","fn","ff","fi"].forEach(i=>$(i).addEventListener("input",render));
+load();status();
+</script></body></html>
